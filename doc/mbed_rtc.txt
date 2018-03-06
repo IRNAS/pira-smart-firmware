@@ -1,0 +1,11 @@
+nRF51 RTC example
+There are no mbed libraries with time and date tracking, but it can be possible to implement that.
+https://os.mbed.com/users/fxschumacher/code/nRF51_rtc_example/file/c1f06d0a5e11/main.cpp/
+https://os.mbed.com/users/fxschumacher/code/nrf51_rtc/
+
+MBED libraries are availabe for these RTCs:
+DS1307
+DS3231
+
+Nordic SDK example documentation
+http://infocenter.nordicsemi.com/index.jsp?topic=%2Fcom.nordic.infocenter.sdk5.v13.0.0%2Frtc_example.html&cp=4_0_0_4_4_27
