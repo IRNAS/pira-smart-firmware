@@ -5,7 +5,12 @@ https://os.mbed.com/users/fxschumacher/code/nrf51_rtc/
 
 MBED libraries are availabe for these RTCs:
 DS1307
-DS3231
+DS3231 https://os.mbed.com/users/cromda/code/DS3231/
+https://os.mbed.com/components/AM1805-Real-Time-Clock-with-Power-Manage/
+https://os.mbed.com/components/ISL1208-Real-Time-Clock/
 
 Nordic SDK example documentation
 http://infocenter.nordicsemi.com/index.jsp?topic=%2Fcom.nordic.infocenter.sdk5.v13.0.0%2Frtc_example.html&cp=4_0_0_4_4_27
+
+https://docs.mbed.com/docs/mbed-os-api-reference/en/5.1/APIs/tasks/Time/
+
