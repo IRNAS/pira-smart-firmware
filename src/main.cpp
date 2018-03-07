@@ -1,17 +1,8 @@
 #include "mbed.h"
+#include "app_config.h"
 
-#define LED_GREEN   p21
-#define LED_RED     p22
-#define LED_BLUE    p23
-#define BUTTON_PIN  p17
-
-//#define UART_TX     p9
-#define UART_TX     p3
-//#define UART_RX     p11
-#define UART_RX     p4
-
-DigitalOut led1(LED1);
-InterruptIn button1(BUTTON1);
+DigitalOut led1(LED_1);
+InterruptIn button1(BUTTON_1);
 
 //Serial pc(USBTX, USBRX);
 Serial pc(UART_TX, UART_RX);
