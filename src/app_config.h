@@ -11,6 +11,9 @@
 
 #if (TARGET == TARGET_DEFAULT)
    
+    #define LED_ON      0
+    #define LED_OFF     1
+
     #define LED_1       LED1 
     #define LED_2       LED2
     #define LED_3       LED3
@@ -20,6 +23,9 @@
     #define UART_RX     USBRX
 
 #elif (TARGET == TARGET_RBLABBLENANO)
+    
+    #define LED_ON      0
+    #define LED_OFF     1
 
     #define LED_1       p19
     #define LED_2       p20
@@ -33,6 +39,9 @@
     #define UART_RX     p11
 
 #elif (TARGET == TARGET_SEEEDTINYBLE) 
+
+    #define LED_ON      0
+    #define LED_OFF     1
 
     #define LED_1       LED1 
     #define LED_2       LED2
