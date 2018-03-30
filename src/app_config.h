@@ -27,8 +27,8 @@
     #define LED_ON      0
     #define LED_OFF     1
 
-    #define LED_1       p19
-    #define LED_2       p20
+    #define LED_1       p23
+    #define LED_2       p22
     #define LED_3       p21
 
     #define BUTTON_1    p16
@@ -37,6 +37,9 @@
 
     #define UART_TX     p9
     #define UART_RX     p11
+
+    #define I2C_SDA     p0
+    #define I2C_SCL     p1
 
 #elif (TARGET == TARGET_SEEEDTINYBLE) 
 
