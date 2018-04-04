@@ -9,8 +9,10 @@ InterruptIn button1(BUTTON_1);
 
 //Serial pc(USBTX, USBRX);
 Serial pc(UART_TX, UART_RX);
+// Create I2C object
+I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
-ISL1208 rtc(I2C_SDA, I2C_SCL);     
+ISL1208 rtc(&i2c);    
 
 void button1_detect(void)
 {
@@ -23,6 +25,8 @@ int main()
     //Initialize variables
     pc.baud(115200);
     pc.printf("Start...\n");
+
+    i2c.frequency(400000); //400kHz
 
     button1.fall(button1_detect);
     led1 = LED_OFF;
@@ -39,7 +43,7 @@ int main()
         rtc.oscillatorMode(ISL1208::OSCILLATOR_CRYSTAL);
  
         // Reset the time 
-        rtc.time(1522407240);
+        //rtc.time(1522407240);
 
         //Check if we need to reset the time
         if (rtc.powerFailed()) 
@@ -49,7 +53,7 @@ int main()
             pc.printf("Device has lost power! Resetting time...\n");
 
             //Set RTC time to Wed, 28 Oct 2009 11:35:37
-            rtc.time(1256729737);
+            rtc.time(1522758120);
         }
 
         while(1) 
