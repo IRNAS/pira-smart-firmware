@@ -17,6 +17,7 @@
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "LEDService.h"
+#include "PiraService.h"
 #include "app_config.h"
 #include "ISL1208.h"
  
@@ -30,10 +31,13 @@ I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
 ISL1208 rtc(&i2c);    
  
-const static char     DEVICE_NAME[] = "LED";
-static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
+const static char     DEVICE_NAME[] = "PiraSmart";
+static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
+
+char *setTimeValue = "Wed Oct 28 11:35:37 2009\n";
  
-LEDService *ledServicePtr;
+LEDService  *ledServicePtr;
+PiraService *piraServicePtr;
  
 Ticker ticker;
 
@@ -68,6 +72,11 @@ void periodicCallback(void)
 void onDataWrittenCallback(const GattWriteCallbackParams *params) {
     if ((params->handle == ledServicePtr->getValueHandle()) && (params->len == 1)) {
         actuatedLED = *(params->data);
+    }
+    else if (params->handle == piraServicePtr->getSetTimeValueHandle())
+    {
+        memset(setTimeValue, 0x00, strlen((const char *)setTimeValue)); 
+        memcpy(setTimeValue, params->data, params->len);  
     }
 }
  
@@ -104,6 +113,8 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     bool initialValueForLEDCharacteristic = false;
     ledServicePtr = new LEDService(ble, initialValueForLEDCharacteristic);
  
+    piraServicePtr = new PiraService(ble, setTimeValue);
+    
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
