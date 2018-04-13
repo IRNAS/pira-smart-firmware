@@ -21,6 +21,9 @@
 #include "app_config.h"
 #include "ISL1208.h"
  
+//Initial Time is Mon, 1 Jan 2018 00:00:00
+#define TIME_INIT_VALUE  1514764800UL
+
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_3, 1);
 
@@ -33,19 +36,17 @@ ISL1208 rtc(&i2c);
  
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
-
-//char setTimeValue[26] = "Wed Oct 28 11:35:37 2009\n";
+uint8_t  piraStatus;
 uint32_t setTimeValue;
 char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
-//char *setTimeValue = "Wed Oct 28 11:35:37 2009\n";
-char * temp;
+char *temp;
+uint8_t sendTime; 
+
+Ticker ticker;
  
+//Service pointers declarations
 LEDService  *ledServicePtr;
 PiraService *piraServicePtr;
- 
-Ticker ticker;
-
-uint8_t send_time; 
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
@@ -54,17 +55,10 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
  
 void periodicCallback(void)
 {
-    alivenessLED = !alivenessLED; /* Do blinky on LED1 to indicate system aliveness. */
-    
-    send_time = 1; 
-    //Get the current time
-    //time_t seconds = rtc.time();
-    //pc.printf("Test\n");
-    //Print the time in various formats
-    //pc.printf("Time as a basic string = %s", ctime(&seconds));
-    //char buffer[32];
-    //strftime(buffer, 32, "%I:%M %p\n", localtime(&seconds));
-    //pc.printf("Time as a custom formatted string = %s", buffer);
+    // Do blinky on LED1 to indicate system aliveness.
+    alivenessLED = !alivenessLED; 
+    // Set flag to update status every second    
+    sendTime = 1; 
 }
  
 /**
@@ -79,7 +73,7 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
     }
     else if ((params->handle == piraServicePtr->getSetTimeValueHandle()) && (params->len == 4))
     {
-        //setTimeValue = *(params->data);
+        //When time data received (in seconds format) update RTC value
         memset(&setTimeValue, 0x00, sizeof(setTimeValue)); 
         memcpy(&setTimeValue, params->data, params->len);  
         rtc.time((time_t)setTimeValue); 
@@ -92,6 +86,7 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
 void onBleInitError(BLE &ble, ble_error_t error)
 {
     /* Initialization error handling should go here */
+    pc.printf("Error occured\n");
 }
  
 /**
@@ -119,8 +114,9 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     bool initialValueForLEDCharacteristic = false;
     ledServicePtr = new LEDService(ble, initialValueForLEDCharacteristic);
 
-    setTimeValue = 1523552400; 
-    piraServicePtr = new PiraService(ble, setTimeValue, getTimeValue);
+    setTimeValue = TIME_INIT_VALUE; 
+    piraStatus = 0;
+    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -155,8 +151,8 @@ void init_rtc(void)
             //The time has been lost due to a power complete power failure
             pc.printf("Device has lost power! Resetting time...\n");
 
-            //Set RTC time to Wed, 28 Oct 2009 11:35:37
-            rtc.time(1522758120);
+            //Set RTC time to Mon, 1 Jan 2018 00:00:00
+            rtc.time(TIME_INIT_VALUE);
         }
     }
     else
@@ -167,7 +163,9 @@ void init_rtc(void)
  
 int main(void)
 {
-    send_time = 0;
+    // Initialize variables
+    sendTime = 0;
+
     // UART needs to be initialized first to use it for debugging
     init_uart();
 
@@ -177,6 +175,7 @@ int main(void)
     // periodicCallback must be attached after I2C is initialized
     ticker.attach(periodicCallback, 1); /* Blink LED every second */
 
+    // Initialize BLE
     BLE &ble = BLE::Instance();
     ble.init(bleInitComplete);
  
@@ -187,20 +186,22 @@ int main(void)
     while (true) {
         ble.waitForEvent();
 
-        if (send_time)
+        if (sendTime)
         {
-            send_time = 0;
+            sendTime = 0;
 
-            //Get the current time
+            //Get the current time and send it to UART
             time_t seconds = rtc.time();
-
             pc.printf("Time as a basic string = %s", ctime(&seconds));
             
+            // Write current time to containter variable which can be read over BLE
             temp = ctime(&seconds);
             memcpy(getTimeValue, temp, strlen((const char *)temp));
-            //pc.printf("Time sent to BT  = %s\n", &getTimeValue);
             piraServicePtr->updateTime(getTimeValue);
-            
+           
+            // Update status value
+            piraStatus++;
+            piraServicePtr->updateStatus(&piraStatus);
             //seconds = (time_t)setTimeValue;
             //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
             //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
