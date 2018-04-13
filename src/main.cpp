@@ -38,6 +38,8 @@ const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
 uint8_t  piraStatus;
 uint32_t setTimeValue;
+uint32_t onPeriodValue;
+uint32_t offPeriodValue;
 char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
 char *temp;
 uint8_t sendTime; 
@@ -78,6 +80,19 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
         memcpy(&setTimeValue, params->data, params->len);  
         rtc.time((time_t)setTimeValue); 
     }
+    else if ((params->handle == piraServicePtr->getOnPeriodSecondsValueHandle()) && (params->len == 4))
+    {
+        memset(&onPeriodValue, 0x00, sizeof(onPeriodValue)); 
+        memcpy(&onPeriodValue, params->data, params->len);  
+        //onPeriodValue = *(params->data);
+    }
+    else if ((params->handle == piraServicePtr->getOffPeriodSecondsValueHandle()) && (params->len == 4))
+    {
+        memset(&offPeriodValue, 0x00, sizeof(offPeriodValue)); 
+        memcpy(&offPeriodValue, params->data, params->len);  
+        //offPeriodValue = *(params->data);
+    }
+
 }
  
 /**
@@ -116,7 +131,9 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
     setTimeValue = TIME_INIT_VALUE; 
     piraStatus = 0;
-    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue);
+    onPeriodValue = 0;
+    offPeriodValue = 0;
+    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -206,6 +223,8 @@ int main(void)
             //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
             //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
             //rtc.time(seconds); 
+            pc.printf("onPeriodValue = %d\n", onPeriodValue);
+            pc.printf("offPeriodValue = %d\n", offPeriodValue);
         }
     }
 }
