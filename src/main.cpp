@@ -34,7 +34,11 @@ ISL1208 rtc(&i2c);
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
 
-char *setTimeValue = "Wed Oct 28 11:35:37 2009\n";
+//char setTimeValue[26] = "Wed Oct 28 11:35:37 2009\n";
+uint32_t setTimeValue;
+char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
+//char *setTimeValue = "Wed Oct 28 11:35:37 2009\n";
+char * temp;
  
 LEDService  *ledServicePtr;
 PiraService *piraServicePtr;
@@ -73,10 +77,12 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
     if ((params->handle == ledServicePtr->getValueHandle()) && (params->len == 1)) {
         actuatedLED = *(params->data);
     }
-    else if (params->handle == piraServicePtr->getSetTimeValueHandle())
+    else if ((params->handle == piraServicePtr->getSetTimeValueHandle()) && (params->len == 4))
     {
-        memset(setTimeValue, 0x00, strlen((const char *)setTimeValue)); 
-        memcpy(setTimeValue, params->data, params->len);  
+        //setTimeValue = *(params->data);
+        memset(&setTimeValue, 0x00, sizeof(setTimeValue)); 
+        memcpy(&setTimeValue, params->data, params->len);  
+        rtc.time((time_t)setTimeValue); 
     }
 }
  
@@ -112,8 +118,9 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
  
     bool initialValueForLEDCharacteristic = false;
     ledServicePtr = new LEDService(ble, initialValueForLEDCharacteristic);
- 
-    piraServicePtr = new PiraService(ble, setTimeValue);
+
+    setTimeValue = 1523552400; 
+    piraServicePtr = new PiraService(ble, setTimeValue, getTimeValue);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -186,11 +193,18 @@ int main(void)
 
             //Get the current time
             time_t seconds = rtc.time();
-            //Print the time in various formats
+
             pc.printf("Time as a basic string = %s", ctime(&seconds));
-            //char buffer[32];
-            //strftime(buffer, 32, "%I:%M %p\n", localtime(&seconds));
-            //pc.printf("Time as a custom formatted string = %s", buffer);
+            
+            temp = ctime(&seconds);
+            memcpy(getTimeValue, temp, strlen((const char *)temp));
+            //pc.printf("Time sent to BT  = %s\n", &getTimeValue);
+            piraServicePtr->updateTime(getTimeValue);
+            
+            //seconds = (time_t)setTimeValue;
+            //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
+            //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
+            //rtc.time(seconds); 
         }
     }
 }

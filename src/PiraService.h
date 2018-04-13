@@ -23,38 +23,54 @@ class PiraService {
 public:
     const static uint16_t PIRA_SERVICE_UUID                 = 0xB000;
     const static uint16_t PIRA_SET_TIME_CHARACTERISTIC_UUID = 0xB001;
-    //const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID = 0xB002;
+    const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID = 0xB002;
     //const static uint16_t PIRA_STATUS_CHARACTERISTIC_UUID   = 0xB003;
  
     PiraService(BLEDevice &_ble, 
-                char *piraSetTimeInitValue = NULL) :
+                //char *piraSetTimeInitValue = NULL,
+                uint32_t piraSetTimeInitValue = 0,
+                char *piraGetTimeInitValue = NULL) :
         ble(_ble), 
-        setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, 
-                (uint8_t *)piraSetTimeInitValue,
-                (piraSetTimeInitValue != NULL) ? strlen((const char *)piraSetTimeInitValue) : 0,
-                (piraSetTimeInitValue != NULL) ? strlen((const char *)piraSetTimeInitValue) : 0,
-                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE)
+        setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, &piraSetTimeInitValue),
+//        setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, 
+//                (uint8_t *)piraSetTimeInitValue,
+//                (piraSetTimeInitValue != NULL) ? strlen((const char *)piraSetTimeInitValue) : 0,
+//                (piraSetTimeInitValue != NULL) ? strlen((const char *)piraSetTimeInitValue) : 0,
+//                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE),
+        getTime(PIRA_GET_TIME_CHARACTERISTIC_UUID, 
+                (uint8_t *)piraGetTimeInitValue,
+                (piraGetTimeInitValue != NULL) ? strlen((const char *)piraGetTimeInitValue) : 0,
+                (piraGetTimeInitValue != NULL) ? strlen((const char *)piraGetTimeInitValue) : 0,
+                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ)
 //        getTime(PIRA_GET_TIME_CHARACTERISTIC_UUID, &piraGetTimeInitValue),
 //        getStatus(PIRA_STATUS_CHARACTERISTIC_UUID, &piraGetStatusInitValue)
     {
-        GattCharacteristic *charTable[] = {&setTime};//, &getTime, &getStatus};
+        GattCharacteristic *charTable[] = {&setTime, &getTime};//, &getTime, &getStatus};
         GattService         piraService(PIRA_SERVICE_UUID, charTable, sizeof(charTable) / sizeof(GattCharacteristic *));
         ble.addService(piraService);
     }
  
-    GattAttribute::Handle_t getSetTimeValueHandle() const {
+    GattAttribute::Handle_t getSetTimeValueHandle() const 
+    {
         return setTime.getValueHandle();
+    }
+
+    void updateTime(char *time)
+    {
+        ble.gattServer().write(getTime.getValueHandle(), (const uint8_t *)time, strlen((const char *)time));
+    }
 
 //    GattAttribute::Handle_t getValueHandle() const {
 //        return ledState.getValueHandle();
 //
 //    GattAttribute::Handle_t getValueHandle() const {
 //        return ledState.getValueHandle();
-    }
  
 private:
-    BLEDevice                           &ble;
-    GattCharacteristic                  setTime;
+    BLEDevice                             &ble;
+    //GattCharacteristic                  setTime;
+    ReadWriteGattCharacteristic<uint32_t> setTime;
+    GattCharacteristic                    getTime;
     //WriteOnlyGattCharacteristic<bool>   setTime;
     //ReadOnlyGattCharacteristic<uint8_t> getTime;
     //ReadOnlyGattCharacteristic<uint8_t> getStatus;
