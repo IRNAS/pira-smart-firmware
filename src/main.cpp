@@ -27,6 +27,7 @@
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
+DigitalOut fetOutput(FET_OUTPUT, 0);
 //DigitalOut 3v3PowerEnable( , 0);
 DigitalOut powerEnable5V(ENABLE_5V_PIN, 0);
 DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);

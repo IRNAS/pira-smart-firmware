@@ -66,6 +66,7 @@
     #define ENABLE_5V_PIN   p25
 
     #define RASPBERRY_PI_STATUS     p5  //GPIO_BCM17 from RaspberryPi
+    #define FET_OUTPUT              p30 
 
 #elif (TARGET == TARGET_SEEEDTINYBLE) 
 
