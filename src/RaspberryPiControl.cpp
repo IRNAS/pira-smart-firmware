@@ -42,12 +42,14 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
         case WAKEUP_STATE:
             //Send sensor data and when wakeup period set, shutdown
             //In order for timeout to work, this function should be executed every 1s
+
+            //Add logic to check status pin and then turn off power supply.
+
+            //After timeout, turn off power supply anyway without waiting for status.
             timeout++;
             if (timeout > onThreshold)
             {
                 timeout = 0;
-                //Turn OFF 5V power supply
-                powerEnable5V->write(0);
                 state = WAIT_STATUS_OFF_STATE;
             }
 
@@ -56,6 +58,8 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
         case WAIT_STATUS_OFF_STATE:
             if (raspberryPiStatus->read())
             {
+                //Turn OFF 5V power supply
+                powerEnable5V->write(0);
                 //Add some timeout also
                 state = IDLE_STATE;
             }
