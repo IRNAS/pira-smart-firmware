@@ -8,7 +8,8 @@
 #define TARGET_SEEEDTINYBLE     2    /*< Seeed Tiny BLE board */
 #define TARGET_PIRA_SMART       3    /*< Pira Smart board */
 
-#define TARGET                  TARGET_RBLABBLENANO
+//#define TARGET                  TARGET_RBLABBLENANO
+#define TARGET                  TARGET_PIRA_SMART
 
 #if (TARGET == TARGET_DEFAULT)
    
@@ -42,11 +43,13 @@
     #define I2C_SDA     p0
     #define I2C_SCL     p1
 
-    #define 3V3_ENABLE_PIN  p21
-    #define 5V_ENABLE_PIN   p19
+    #define ENABLE_3V3_PIN  p21
+    #define ENABLE_5V_PIN   p19
 
 #elif (TARGET == TARGET_PIRA_SMART)
     
+    #define DEBUG
+
     #define LED_ON      1
     #define LED_OFF     0
 
@@ -59,8 +62,10 @@
     #define I2C_SDA     p3
     #define I2C_SCL     p2
 
-    #define 3V3_ENABLE_PIN  p1
-    #define 5V_ENABLE_PIN   p25
+    #define ENABLE_3V3_PIN  p1
+    #define ENABLE_5V_PIN   p25
+
+    #define RASPBERRY_PI_STATUS     p5  //GPIO_BCM17 from RaspberryPi
 
 #elif (TARGET == TARGET_SEEEDTINYBLE) 
 

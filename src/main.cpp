@@ -20,12 +20,18 @@
 #include "PiraService.h"
 #include "app_config.h"
 #include "ISL1208.h"
+#include "RaspberryPiControl.h"
  
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
 
 DigitalOut alivenessLED(LED_1, 0);
-DigitalOut actuatedLED(LED_3, 1);
+DigitalOut actuatedLED(LED_2, 0);
+//DigitalOut 3v3PowerEnable( , 0);
+DigitalOut powerEnable5V(ENABLE_5V_PIN, 0);
+DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);
+
+DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS);
 
 // Create UART object
 Serial pc(UART_TX, UART_RX);
@@ -33,6 +39,8 @@ Serial pc(UART_TX, UART_RX);
 I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
 ISL1208 rtc(&i2c);    
+// RaspberryPiControl object
+RaspberryPiControl raspberryPiControl;
  
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
@@ -180,18 +188,19 @@ void init_rtc(void)
  
 int main(void)
 {
+    // Enable 3V3 power for RTC and LoRa
+    powerEnable3V3 = 1; 
+    // Initially enable RaspberryPi power
+    powerEnable5V = 1;
     // Initialize variables
     sendTime = 0;
 
     // UART needs to be initialized first to use it for debugging
     init_uart();
-
     // I2C and RTC init
     init_rtc();
- 
     // periodicCallback must be attached after I2C is initialized
     ticker.attach(periodicCallback, 1); /* Blink LED every second */
-
     // Initialize BLE
     BLE &ble = BLE::Instance();
     ble.init(bleInitComplete);
@@ -223,8 +232,14 @@ int main(void)
             //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
             //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
             //rtc.time(seconds); 
+            
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
+            raspberryPiControl.powerHandler(&raspberryPiStatus, 
+                                            &powerEnable5V,
+                                            onPeriodValue,
+                                            offPeriodValue);
+
         }
     }
 }
