@@ -25,6 +25,9 @@
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
 
+#define ON_PERIOD_INIT_VALUE_s   1800
+#define OFF_PERIOD_INIT_VALUE_s  1800
+
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
 DigitalOut fetOutput(FET_OUTPUT, 0);
@@ -144,8 +147,9 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
     setTimeValue = TIME_INIT_VALUE; 
     piraStatus = 0;
-    onPeriodValue = 0;
-    offPeriodValue = 0;
+    //Set ON and OFF period values to 30min by default
+    onPeriodValue = ON_PERIOD_INIT_VALUE_s;
+    offPeriodValue = OFF_PERIOD_INIT_VALUE_s;
     piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue);
     
     /* setup advertising */
