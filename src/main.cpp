@@ -247,7 +247,10 @@ int main(void)
             piraServicePtr->updateTime(getTimeValue);
            
             // Update status value
-            piraStatus++;
+            //Time when next power supply turn off will occur
+            //piraStatus = seconds - raspberryPiControl.timeoutGet() + onPeriodValue;
+            //Seconds left before next power supply turn off
+            piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
             piraServicePtr->updateStatus(&piraStatus);
             //seconds = (time_t)setTimeValue;
             //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);

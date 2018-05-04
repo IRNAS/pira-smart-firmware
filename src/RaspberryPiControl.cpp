@@ -4,7 +4,8 @@ RaspberryPiControl::RaspberryPiControl(void)
 {
     //Constructor
     state = WAIT_STATUS_ON_STATE;
-    timeout = 0;
+    timeoutOn = 0;
+    timeoutOff = 0;
 }
 
 void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus, 
@@ -16,10 +17,10 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
     {
         case IDLE_STATE:
             //Check if we need to wakeup RaspberryPi
-            timeout++;
-            if (timeout >= offThreshold)
+            timeoutOff++;
+            if (timeoutOff >= offThreshold)
             {
-                timeout = 0;
+                timeoutOff = 0;
                 // Turn OFF RaspberryPi and set on threshold value
                 //Turn ON 5V power supply
                 powerEnable5V->write(1);
@@ -31,7 +32,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
         case WAIT_STATUS_ON_STATE:
             //Wait when RaspberryPi pulls up STATUS pin
             //NOTE: Temporarely check reversed logic
-            if (!raspberryPiStatus->read())
+            if (raspberryPiStatus->read())
             {
                 //Add some timeout also
                 state = WAKEUP_STATE;
@@ -43,26 +44,21 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             //Send sensor data and when wakeup period set, shutdown
             //In order for timeout to work, this function should be executed every 1s
 
-            //Add logic to check status pin and then turn off power supply.
+            //Check status pin and then turn off power supply.
+            //Or after timeout, turn off power supply anyway without waiting for status.
+            timeoutOn++;
 
-            //After timeout, turn off power supply anyway without waiting for status.
-            timeout++;
-            if (timeout > onThreshold)
+            if ((!raspberryPiStatus->read()) || (timeoutOn >= onThreshold))
             {
-                timeout = 0;
-                state = WAIT_STATUS_OFF_STATE;
-            }
-
-            break;
-
-        case WAIT_STATUS_OFF_STATE:
-            if (raspberryPiStatus->read())
-            {
-                //Turn OFF 5V power supply
+                //Turn Off 5V power supply
                 powerEnable5V->write(0);
-                //Add some timeout also
+                //Reset timeout counter
+                timeoutOn = 0;
                 state = IDLE_STATE;
             }
+
+            //Still needed to handle REBOOT state of RPi
+
             break;
 
         default:
