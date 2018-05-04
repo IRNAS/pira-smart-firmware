@@ -34,8 +34,10 @@ DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);
 
 DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS);
 
-// Create UART object
-Serial pc(UART_TX, UART_RX);
+#if defined(DEBUG)
+    // Create UART object
+    Serial pc(UART_TX, UART_RX);
+#endif
 // Create I2C object
 I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
@@ -110,7 +112,9 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
 void onBleInitError(BLE &ble, ble_error_t error)
 {
     /* Initialization error handling should go here */
+#if defined(DEBUG)
     pc.printf("Error occured\n");
+#endif
 }
  
 /**
@@ -153,11 +157,13 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
+#if defined(DEBUG)
 void init_uart(void)
 {
     pc.baud(115200);
     pc.printf("Start...\n");
 }
+#endif
 
 void init_rtc(void)
 {
@@ -166,7 +172,9 @@ void init_rtc(void)
     //Try to open the ISL1208
     if (rtc.open()) 
     {
+#if defined(DEBUG)
         pc.printf("Device detected!\n");
+#endif
  
         //Configure the oscillator for a 32.768kHz crystal
         rtc.oscillatorMode(ISL1208::OSCILLATOR_CRYSTAL);
@@ -174,8 +182,10 @@ void init_rtc(void)
         //Check if we need to reset the time
         if (rtc.powerFailed()) 
         {
+#if defined(DEBUG)
             //The time has been lost due to a power complete power failure
             pc.printf("Device has lost power! Resetting time...\n");
+#endif 
 
             //Set RTC time to Mon, 1 Jan 2018 00:00:00
             rtc.time(TIME_INIT_VALUE);
@@ -183,7 +193,9 @@ void init_rtc(void)
     }
     else
     {
+#if defined(DEBUG)
         pc.printf("Device NOT detected!\n");
+#endif
     }
 }
  
@@ -196,8 +208,10 @@ int main(void)
     // Initialize variables
     sendTime = 0;
 
+#if defined(DEBUG)
     // UART needs to be initialized first to use it for debugging
     init_uart();
+#endif
     // I2C and RTC init
     init_rtc();
     // periodicCallback must be attached after I2C is initialized
@@ -219,7 +233,9 @@ int main(void)
 
             //Get the current time and send it to UART
             time_t seconds = rtc.time();
+#if defined(DEBUG)
             pc.printf("Time as a basic string = %s", ctime(&seconds));
+#endif
             
             // Write current time to containter variable which can be read over BLE
             temp = ctime(&seconds);
@@ -234,8 +250,10 @@ int main(void)
             //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
             //rtc.time(seconds); 
             
+#if defined(DEBUG)
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
+#endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
                                             onPeriodValue,
