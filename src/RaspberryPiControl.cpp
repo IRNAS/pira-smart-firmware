@@ -6,6 +6,7 @@ RaspberryPiControl::RaspberryPiControl(void)
     state = WAIT_STATUS_ON_STATE;
     timeoutOn = 0;
     timeoutOff = 0;
+    timeoutReboot = 0;
 }
 
 void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus, 
@@ -46,9 +47,17 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
 
             //Check status pin and then turn off power supply.
             //Or after timeout, turn off power supply anyway without waiting for status.
+            if (!raspberryPiStatus->read())
+            {
+                timeoutReboot = 0; 
+                timeoutOn = 0;
+                state = REBOOT_DETECTION;
+                break;
+            }
+
             timeoutOn++;
 
-            if ((!raspberryPiStatus->read()) || (timeoutOn >= onThreshold))
+            if (timeoutOn >= onThreshold)
             {
                 //Turn Off 5V power supply
                 powerEnable5V->write(0);
@@ -57,8 +66,25 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 state = IDLE_STATE;
             }
 
-            //Still needed to handle REBOOT state of RPi
+            break;
 
+        case REBOOT_DETECTION:
+            //Wait for reboot timeout
+            timeoutReboot++;
+            if (timeoutReboot >= REBOOT_TIMEOUT_s)
+            {
+                timeoutReboot = 0;
+                if(raspberryPiStatus->read())
+                {
+                    state = WAKEUP_STATE;
+                }
+                else
+                {
+                    //Definitely turn off RPi power supply
+                    powerEnable5V->write(0);
+                    state = IDLE_STATE;
+                }
+            }   
             break;
 
         default:
