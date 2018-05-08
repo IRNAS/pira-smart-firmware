@@ -26,7 +26,10 @@
 #define TIME_INIT_VALUE  1514764800UL
 
 #define ON_PERIOD_INIT_VALUE_s   1800
-#define OFF_PERIOD_INIT_VALUE_s  1800
+//#define OFF_PERIOD_INIT_VALUE_s  1800
+
+//#define ON_PERIOD_INIT_VALUE_s   30
+#define OFF_PERIOD_INIT_VALUE_s  30
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
@@ -37,10 +40,8 @@ DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);
 
 DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS);
 
-#if defined(DEBUG)
-    // Create UART object
-    Serial pc(UART_TX, UART_RX);
-#endif
+// Create UART object
+Serial pc(UART_TX, UART_RX);
 // Create I2C object
 I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
@@ -50,13 +51,16 @@ RaspberryPiControl raspberryPiControl;
  
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
-uint8_t  piraStatus;
+uint32_t  piraStatus;
 uint32_t setTimeValue;
 uint32_t onPeriodValue;
 uint32_t offPeriodValue;
 char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
 char *temp;
 uint8_t sendTime; 
+
+uint32_t uartOffPeriod;
+uint8_t  rx_index;
 
 Ticker ticker;
  
@@ -161,13 +165,31 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
-#if defined(DEBUG)
+void uartCharReceived(void)
+{
+    while (pc.readable())
+    {
+        char received_data = pc.getc();
+        //pc.printf("Received: %c, Index: %d\n", received_data, rx_index);
+        uartOffPeriod |= received_data << (8*rx_index);
+        rx_index++;
+        if (rx_index >= 4)
+        {
+            //pc.printf("uartPiraStatus: %d\n", uartPiraStatus);
+            offPeriodValue = uartOffPeriod;
+            uartOffPeriod = 0;
+            rx_index = 0;
+            break;
+        }
+    }
+}
+
 void init_uart(void)
 {
     pc.baud(115200);
     pc.printf("Start...\n");
+    pc.attach(&uartCharReceived, pc.RxIrq);
 }
-#endif
 
 void init_rtc(void)
 {
@@ -211,11 +233,11 @@ int main(void)
     powerEnable5V = 1;
     // Initialize variables
     sendTime = 0;
+    uartOffPeriod = 0;
+    rx_index = 0;
 
-#if defined(DEBUG)
-    // UART needs to be initialized first to use it for debugging
+    // UART needs to be initialized first to use it for communication with RPi
     init_uart();
-#endif
     // I2C and RTC init
     init_rtc();
     // periodicCallback must be attached after I2C is initialized
@@ -230,7 +252,7 @@ int main(void)
  
     while (true) {
         ble.waitForEvent();
-
+        
         if (sendTime)
         {
             sendTime = 0;
@@ -252,15 +274,16 @@ int main(void)
             //Seconds left before next power supply turn off
             piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
             piraServicePtr->updateStatus(&piraStatus);
+            pc.printf("%d\n", piraStatus);
             //seconds = (time_t)setTimeValue;
             //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
             //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
             //rtc.time(seconds); 
             
-#if defined(DEBUG)
+//#if defined(DEBUG)
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
-#endif
+//#endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
                                             onPeriodValue,

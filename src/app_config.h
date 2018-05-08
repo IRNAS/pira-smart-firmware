@@ -48,7 +48,7 @@
 
 #elif (TARGET == TARGET_PIRA_SMART)
     
-    #define DEBUG
+//    #define DEBUG
 
     #define LED_ON      1
     #define LED_OFF     0

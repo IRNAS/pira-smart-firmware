@@ -30,7 +30,7 @@ public:
  
     PiraService(BLEDevice &_ble, 
                 uint32_t  piraSetTimeInitValue   = 0,
-                uint8_t   piraGetStatusInitValue = 0,
+                uint32_t  piraGetStatusInitValue = 0,
                 char      *piraGetTimeInitValue  = NULL,
                 uint32_t  piraOnPeriodInitValue  = 0,
                 uint32_t  piraOffPeriodInitValue = 0) :
@@ -60,9 +60,9 @@ public:
         ble.gattServer().write(getTime.getValueHandle(), (const uint8_t *)time, strlen((const char *)time));
     }
 
-    void updateStatus(uint8_t *status)
+    void updateStatus(uint32_t *status)
     {
-        ble.gattServer().write(getStatus.getValueHandle(), (const uint8_t *)status, sizeof(uint8_t));
+        ble.gattServer().write(getStatus.getValueHandle(), (const uint8_t *)status, sizeof(uint32_t));
     }
 
     GattAttribute::Handle_t getOnPeriodSecondsValueHandle() const 
@@ -79,7 +79,7 @@ private:
     BLEDevice                             &ble;
     WriteOnlyGattCharacteristic<uint32_t> setTime;
     GattCharacteristic                    getTime;
-    ReadOnlyGattCharacteristic<uint8_t>   getStatus;
+    ReadOnlyGattCharacteristic<uint32_t>  getStatus;
     // onPeriod is amout of time RPi needs to be awake before going to sleep
     WriteOnlyGattCharacteristic<uint32_t> onPeriodSeconds;
     // offPeriod is amount of time RPi needs to sleep for before next wakeup
