@@ -21,19 +21,21 @@
 
 class PiraService {
 public:
-    const static uint16_t PIRA_SERVICE_UUID                   = 0xB000;
-    const static uint16_t PIRA_SET_TIME_CHARACTERISTIC_UUID   = 0xB001;
-    const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID   = 0xB002;
-    const static uint16_t PIRA_STATUS_CHARACTERISTIC_UUID     = 0xB003;
-    const static uint16_t PIRA_ON_PERIOD_CHARACTERISTIC_UUID  = 0xB004;
-    const static uint16_t PIRA_OFF_PERIOD_CHARACTERISTIC_UUID = 0xB005;
+    const static uint16_t PIRA_SERVICE_UUID                      = 0xB000;
+    const static uint16_t PIRA_SET_TIME_CHARACTERISTIC_UUID      = 0xB001;
+    const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID      = 0xB002;
+    const static uint16_t PIRA_STATUS_CHARACTERISTIC_UUID        = 0xB003;
+    const static uint16_t PIRA_ON_PERIOD_CHARACTERISTIC_UUID     = 0xB004;
+    const static uint16_t PIRA_OFF_PERIOD_CHARACTERISTIC_UUID    = 0xB005;
+    const static uint16_t PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID = 0xB006;
  
     PiraService(BLEDevice &_ble, 
-                uint32_t  piraSetTimeInitValue   = 0,
-                uint32_t  piraGetStatusInitValue = 0,
-                char      *piraGetTimeInitValue  = NULL,
-                uint32_t  piraOnPeriodInitValue  = 0,
-                uint32_t  piraOffPeriodInitValue = 0) :
+                uint32_t  piraSetTimeInitValue      = 0,
+                uint32_t  piraGetStatusInitValue    = 0,
+                char      *piraGetTimeInitValue     = NULL,
+                uint32_t  piraOnPeriodInitValue     = 0,
+                uint32_t  piraOffPeriodInitValue    = 0,
+                uint8_t   piraBatteryLevelInitValue = 0) :
         ble(_ble), 
         setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, &piraSetTimeInitValue),
         getTime(PIRA_GET_TIME_CHARACTERISTIC_UUID, 
@@ -43,9 +45,10 @@ public:
                 GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ),
         getStatus(PIRA_STATUS_CHARACTERISTIC_UUID, &piraGetStatusInitValue),
         onPeriodSeconds(PIRA_ON_PERIOD_CHARACTERISTIC_UUID, &piraOnPeriodInitValue),
-        offPeriodSeconds(PIRA_OFF_PERIOD_CHARACTERISTIC_UUID, &piraOffPeriodInitValue)    
+        offPeriodSeconds(PIRA_OFF_PERIOD_CHARACTERISTIC_UUID, &piraOffPeriodInitValue),
+        getBatteryLevel(PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID, &piraBatteryLevelInitValue)
     {
-        GattCharacteristic *charTable[] = {&setTime, &getTime, &getStatus, &onPeriodSeconds, &offPeriodSeconds};
+        GattCharacteristic *charTable[] = {&setTime, &getTime, &getStatus, &onPeriodSeconds, &offPeriodSeconds, &getBatteryLevel};
         GattService         piraService(PIRA_SERVICE_UUID, charTable, sizeof(charTable) / sizeof(GattCharacteristic *));
         ble.addService(piraService);
     }
@@ -75,6 +78,11 @@ public:
         return offPeriodSeconds.getValueHandle();
     }
 
+    void updateBatteryLevel(uint8_t *batteryLevel)
+    {
+        ble.gattServer().write(getBatteryLevel.getValueHandle(), (const uint8_t *)batteryLevel, sizeof(uint8_t));
+    }
+
 private:
     BLEDevice                             &ble;
     WriteOnlyGattCharacteristic<uint32_t> setTime;
@@ -84,6 +92,7 @@ private:
     WriteOnlyGattCharacteristic<uint32_t> onPeriodSeconds;
     // offPeriod is amount of time RPi needs to sleep for before next wakeup
     WriteOnlyGattCharacteristic<uint32_t> offPeriodSeconds;
+    ReadOnlyGattCharacteristic<uint8_t>   getBatteryLevel;
 };
  
 #endif /* #ifndef __BLE_PIRA_SERVICE_H__ */

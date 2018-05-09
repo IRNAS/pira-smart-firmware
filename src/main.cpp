@@ -21,6 +21,7 @@
 #include "app_config.h"
 #include "ISL1208.h"
 #include "RaspberryPiControl.h"
+#include "BatteryVoltage.h"
  
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
@@ -48,6 +49,8 @@ I2C i2c(I2C_SDA, I2C_SCL);
 ISL1208 rtc(&i2c);    
 // RaspberryPiControl object
 RaspberryPiControl raspberryPiControl;
+// Battery Voltage object
+BatteryVoltage batteryVoltage;
  
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
@@ -58,7 +61,7 @@ uint32_t offPeriodValue;
 char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
 char *temp;
 uint8_t sendTime; 
-
+uint8_t batteryLevelContainer;
 uint32_t uartOffPeriod;
 uint8_t  rx_index;
 
@@ -154,7 +157,8 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     //Set ON and OFF period values to 30min by default
     onPeriodValue = ON_PERIOD_INIT_VALUE_s;
     offPeriodValue = OFF_PERIOD_INIT_VALUE_s;
-    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue);
+    batteryLevelContainer = 0;
+    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue, batteryLevelContainer);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -224,7 +228,7 @@ void init_rtc(void)
 #endif
     }
 }
- 
+
 int main(void)
 {
     // Enable 3V3 power for RTC and LoRa
@@ -235,6 +239,10 @@ int main(void)
     sendTime = 0;
     uartOffPeriod = 0;
     rx_index = 0;
+    
+
+//    uint8_t batteryVoltageiData = 0;
+
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
@@ -242,6 +250,7 @@ int main(void)
     init_rtc();
     // periodicCallback must be attached after I2C is initialized
     ticker.attach(periodicCallback, 1); /* Blink LED every second */
+
     // Initialize BLE
     BLE &ble = BLE::Instance();
     ble.init(bleInitComplete);
@@ -257,7 +266,7 @@ int main(void)
         {
             sendTime = 0;
 
-            //Get the current time and send it to UART
+            // Get the current time from RTC 
             time_t seconds = rtc.time();
 #if defined(DEBUG)
             pc.printf("Time as a basic string = %s", ctime(&seconds));
@@ -268,27 +277,25 @@ int main(void)
             memcpy(getTimeValue, temp, strlen((const char *)temp));
             piraServicePtr->updateTime(getTimeValue);
            
-            // Update status value
-            //Time when next power supply turn off will occur
-            //piraStatus = seconds - raspberryPiControl.timeoutGet() + onPeriodValue;
-            //Seconds left before next power supply turn off
+            // Update status values
+            // Seconds left before next power supply turn off
             piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
             piraServicePtr->updateStatus(&piraStatus);
-            pc.printf("%d\n", piraStatus);
-            //seconds = (time_t)setTimeValue;
-            //pc.printf("New Time Set from BlueTooth number = %d\n", setTimeValue);
-            //pc.printf("New Time Set from BlueTooth = %s\n", ctime(&seconds));
-            //rtc.time(seconds); 
-            
-//#if defined(DEBUG)
+            // Send status to RPi -> time until next sleep and then battery level
+            pc.printf("p:%d\n", piraStatus);
+            batteryLevelContainer = batteryVoltage.batteryLevelGet();
+            piraServicePtr->updateBatteryLevel(&batteryLevelContainer);
+            pc.printf("b:%d\n", batteryLevelContainer);
+
+#if defined(DEBUG)
+            pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
-//#endif
+#endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
                                             onPeriodValue,
                                             offPeriodValue);
-
         }
     }
 }
