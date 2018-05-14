@@ -7,7 +7,7 @@ class BatteryVoltage
 {
 public:
     const static uint16_t resistorLowerKOhm = 100;  //100kOhm 
-    const static uint16_t resistorUpperKOhm = 250;  //250kOhm 
+    const static uint16_t resistorUpperKOhm = 249;  //249kOhm 
     const static float    referenceVoltageV = 1.2;   
     const static uint8_t  adcMax            = 255;   
     
