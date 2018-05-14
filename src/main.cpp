@@ -239,10 +239,6 @@ int main(void)
     sendTime = 0;
     uartOffPeriod = 0;
     rx_index = 0;
-    
-
-//    uint8_t batteryVoltageiData = 0;
-
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
@@ -277,6 +273,8 @@ int main(void)
             memcpy(getTimeValue, temp, strlen((const char *)temp));
             piraServicePtr->updateTime(getTimeValue);
            
+            // Send time to RaspberryPi
+            pc.printf("t:%s", getTimeValue);
             // Update status values
             // Seconds left before next power supply turn off
             piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
