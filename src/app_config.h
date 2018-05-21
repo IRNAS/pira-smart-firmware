@@ -56,8 +56,11 @@
     #define LED_1       p26
     #define LED_2       p27
 
-    #define UART_TX     p19
-    #define UART_RX     p18
+//    #define UART_TX     p19
+//    #define UART_RX     p18
+
+    #define UART_TX     p18
+    #define UART_RX     p19
 
     #define I2C_SDA     p3
     #define I2C_SCL     p2
