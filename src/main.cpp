@@ -273,8 +273,13 @@ int main(void)
             memcpy(getTimeValue, temp, strlen((const char *)temp));
             piraServicePtr->updateTime(getTimeValue);
            
-            // Send time to RaspberryPi
+#ifdef SEND_TIME_AS_STRING
+            // Send time to RaspberryPi in string format
             pc.printf("t:%s", getTimeValue);
+#else
+            // Send time in seconds since Jan 1 1970 00:00:00
+            pc.printf("t:%d\n", seconds);
+#endif
             // Update status values
             // Seconds left before next power supply turn off
             piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
