@@ -24,7 +24,9 @@ public:
     void powerHandler(DigitalIn *raspberryPiStatus, 
                       DigitalOut *powerEnable5V,
                       uint32_t onThreshold,
-                      uint32_t offThreshold);
+                      uint32_t offThreshold,
+                      uint32_t wakeupThreshold,
+                      uint32_t rebootThreshold);
 
     uint32_t timeoutOnGet(void)
     {

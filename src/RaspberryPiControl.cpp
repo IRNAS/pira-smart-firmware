@@ -12,14 +12,17 @@ RaspberryPiControl::RaspberryPiControl(void)
 void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus, 
                                       DigitalOut *powerEnable5V,
                                       uint32_t onThreshold,
-                                      uint32_t offThreshold)
+                                      uint32_t offThreshold,
+                                      uint32_t wakeupThreshold,
+                                      uint32_t rebootThreshold)
 {
     switch(state)
     {
         case IDLE_STATE:
             //Check if we need to wakeup RaspberryPi
             timeoutOff++;
-            if (timeoutOff >= offThreshold)
+            // Typical usecase would be that wakeupThreshold < offThreshold
+            if (timeoutOff >= offThreshold || timeoutOff >= wakeupThreshold)
             {
                 timeoutOff = 0;
                 // Turn OFF RaspberryPi and set on threshold value
@@ -71,7 +74,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
         case REBOOT_DETECTION:
             //Wait for reboot timeout
             timeoutReboot++;
-            if (timeoutReboot >= REBOOT_TIMEOUT_s)
+            if (timeoutReboot >= rebootThreshold)
             {
                 timeoutReboot = 0;
                 if(raspberryPiStatus->read())

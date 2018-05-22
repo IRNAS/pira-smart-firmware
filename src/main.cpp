@@ -22,6 +22,7 @@
 #include "ISL1208.h"
 #include "RaspberryPiControl.h"
 #include "BatteryVoltage.h"
+//#include "UARTParser.h"
  
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
@@ -31,6 +32,8 @@
 
 //#define ON_PERIOD_INIT_VALUE_s   30
 #define OFF_PERIOD_INIT_VALUE_s  30
+
+#define RX_BUFFER_SIZE      6        //Size in B
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
@@ -51,19 +54,23 @@ ISL1208 rtc(&i2c);
 RaspberryPiControl raspberryPiControl;
 // Battery Voltage object
 BatteryVoltage batteryVoltage;
- 
+// UART Parser object
+//UartParser uartParser;
+
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
 uint32_t  piraStatus;
 uint32_t setTimeValue;
 uint32_t onPeriodValue;
 uint32_t offPeriodValue;
+uint32_t rebootThresholdValue;
+uint32_t wakeupThresholdValue;
 char getTimeValue[26] = "Tue Apr 10 12:00:00 2018\n";
 char *temp;
 uint8_t sendTime; 
 uint8_t batteryLevelContainer;
-uint32_t uartOffPeriod;
-uint8_t  rx_index;
+uint8_t rxBuffer[RX_BUFFER_SIZE];
+uint8_t rxIndex;
 
 Ticker ticker;
  
@@ -157,6 +164,8 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     //Set ON and OFF period values to 30min by default
     onPeriodValue = ON_PERIOD_INIT_VALUE_s;
     offPeriodValue = OFF_PERIOD_INIT_VALUE_s;
+    wakeupThresholdValue = OFF_PERIOD_INIT_VALUE_s;
+    rebootThresholdValue = raspberryPiControl.REBOOT_TIMEOUT_s;
     batteryLevelContainer = 0;
     piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue, batteryLevelContainer);
     
@@ -169,20 +178,63 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
+void parseCommands(uint8_t *rxBuffer, uint8_t len)
+{
+    uint8_t firstChar = rxBuffer[0];
+    uint8_t secondChar = rxBuffer[1];
+    uint8_t dataLen = (uint8_t)(len - 2);
+    // Since data type of data is uint32_t, it is by default dataLen = 4
+    // but it is implemented like this in order to later have possibility to update it to different data type 
+    // or to use less than 4B
+    uint32_t data = 0;
+
+    /*
+    for (int i = 0, j = 2; ((i >= (int)dataLen) || (j >= 6)); i++, j++)
+    {
+        data |= (uint32_t)(rxBuffer[j] << ((3-i)*8));
+    }
+    */
+    data = (rxBuffer[2] << 24) | (rxBuffer[3] << 16) | (rxBuffer[4] << 8) | (rxBuffer[5]);
+
+    if (secondChar == ':')
+    {
+        switch(firstChar)
+        {
+            case 't':
+                rtc.time((time_t)data);
+                break;
+            case 'p':
+                onPeriodValue = data;
+                break;
+            case 's':
+                offPeriodValue = data;
+                break;
+            case 'c':
+                pc.printf("To be defined how to react on c: command\n");
+                break;
+            case 'r':
+                rebootThresholdValue = data;
+                break;
+            case 'w':
+                wakeupThresholdValue = data;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 void uartCharReceived(void)
 {
     while (pc.readable())
     {
-        char received_data = pc.getc();
-        //pc.printf("Received: %c, Index: %d\n", received_data, rx_index);
-        uartOffPeriod |= received_data << (8*rx_index);
-        rx_index++;
-        if (rx_index >= 4)
+        // Receive characters 
+        rxBuffer[rxIndex] = pc.getc();
+        rxIndex++;
+        if (rxIndex >= RX_BUFFER_SIZE)
         {
-            //pc.printf("uartPiraStatus: %d\n", uartPiraStatus);
-            offPeriodValue = uartOffPeriod;
-            uartOffPeriod = 0;
-            rx_index = 0;
+            parseCommands(rxBuffer, RX_BUFFER_SIZE);
+            rxIndex = 0;
             break;
         }
     }
@@ -237,8 +289,11 @@ int main(void)
     powerEnable5V = 1;
     // Initialize variables
     sendTime = 0;
-    uartOffPeriod = 0;
-    rx_index = 0;
+    for (int i = 0; i < RX_BUFFER_SIZE; i++)
+    {
+        rxBuffer[i] = 0;
+    }
+    rxIndex = 0;
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
@@ -294,11 +349,15 @@ int main(void)
             pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
+            pc.printf("rebootThresholdValue = %d\n", rebootThresholdValue);
+            pc.printf("wakeupThresholdValue = %d\n", wakeupThresholdValue);
 #endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
                                             onPeriodValue,
-                                            offPeriodValue);
+                                            offPeriodValue,
+                                            wakeupThresholdValue,
+                                            rebootThresholdValue);
         }
     }
 }
