@@ -14,7 +14,8 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                                       uint32_t onThreshold,
                                       uint32_t offThreshold,
                                       uint32_t wakeupThreshold,
-                                      uint32_t rebootThreshold)
+                                      uint32_t rebootThreshold,
+                                      bool forceOffPeriodEnd)
 {
     switch(state)
     {
@@ -22,7 +23,9 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             //Check if we need to wakeup RaspberryPi
             timeoutOff++;
             // Typical usecase would be that wakeupThreshold < offThreshold
-            if (timeoutOff >= offThreshold || timeoutOff >= wakeupThreshold)
+            if ((timeoutOff >= offThreshold)    || 
+                (timeoutOff >= wakeupThreshold) || 
+                forceOffPeriodEnd)
             {
                 timeoutOff = 0;
                 // Turn OFF RaspberryPi and set on threshold value

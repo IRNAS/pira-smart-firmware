@@ -26,7 +26,8 @@ public:
                       uint32_t onThreshold,
                       uint32_t offThreshold,
                       uint32_t wakeupThreshold,
-                      uint32_t rebootThreshold);
+                      uint32_t rebootThreshold,
+                      bool forceOffPeriodEnd);
 
     uint32_t timeoutOnGet(void)
     {

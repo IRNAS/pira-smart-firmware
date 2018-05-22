@@ -71,6 +71,7 @@ uint8_t sendTime;
 uint8_t batteryLevelContainer;
 uint8_t rxBuffer[RX_BUFFER_SIZE];
 uint8_t rxIndex;
+bool turnOnRpiState;
 
 Ticker ticker;
  
@@ -98,7 +99,8 @@ void periodicCallback(void)
  *     Information about the characterisitc being updated.
  */
 void onDataWrittenCallback(const GattWriteCallbackParams *params) {
-    if ((params->handle == ledServicePtr->getValueHandle()) && (params->len == 1)) {
+    if ((params->handle == ledServicePtr->getValueHandle()) && (params->len == 1)) 
+    {
         actuatedLED = *(params->data);
     }
     else if ((params->handle == piraServicePtr->getSetTimeValueHandle()) && (params->len == 4))
@@ -120,7 +122,10 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
         memcpy(&offPeriodValue, params->data, params->len);  
         //offPeriodValue = *(params->data);
     }
-
+    else if ((params->handle == piraServicePtr->getTurnOnRpiStateValueHandle()) && (params->len == 1))
+    {
+        turnOnRpiState = *(params->data);
+    }
 }
  
 /**
@@ -167,7 +172,15 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     wakeupThresholdValue = OFF_PERIOD_INIT_VALUE_s;
     rebootThresholdValue = raspberryPiControl.REBOOT_TIMEOUT_s;
     batteryLevelContainer = 0;
-    piraServicePtr = new PiraService(ble, setTimeValue, piraStatus, getTimeValue, onPeriodValue, offPeriodValue, batteryLevelContainer);
+    turnOnRpiState = 0;
+    piraServicePtr = new PiraService(ble, 
+                                     setTimeValue, 
+                                     piraStatus, 
+                                     getTimeValue, 
+                                     onPeriodValue, 
+                                     offPeriodValue, 
+                                     batteryLevelContainer,
+                                     turnOnRpiState);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -182,7 +195,7 @@ void parseCommands(uint8_t *rxBuffer, uint8_t len)
 {
     uint8_t firstChar = rxBuffer[0];
     uint8_t secondChar = rxBuffer[1];
-    uint8_t dataLen = (uint8_t)(len - 2);
+    // uint8_t dataLen = (uint8_t)(len - 2);
     // Since data type of data is uint32_t, it is by default dataLen = 4
     // but it is implemented like this in order to later have possibility to update it to different data type 
     // or to use less than 4B
@@ -351,13 +364,15 @@ int main(void)
             pc.printf("offPeriodValue = %d\n", offPeriodValue);
             pc.printf("rebootThresholdValue = %d\n", rebootThresholdValue);
             pc.printf("wakeupThresholdValue = %d\n", wakeupThresholdValue);
+            pc.printf("turnOnRpiState = %d\n", turnOnRpiState); 
 #endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
                                             onPeriodValue,
                                             offPeriodValue,
                                             wakeupThresholdValue,
-                                            rebootThresholdValue);
+                                            rebootThresholdValue,
+                                            turnOnRpiState);
         }
     }
 }
