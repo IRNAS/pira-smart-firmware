@@ -59,7 +59,7 @@ BatteryVoltage batteryVoltage;
 
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
-uint32_t  piraStatus;
+uint32_t piraStatus;
 uint32_t setTimeValue;
 uint32_t onPeriodValue;
 uint32_t offPeriodValue;
@@ -237,6 +237,29 @@ void parseCommands(uint8_t *rxBuffer, uint8_t len)
     }
 }
 
+void uartSendCommand(char command, uint32_t data)
+{
+    pc.putc((int)command);
+    pc.putc(':');
+    pc.putc((int)((data & 0xFF000000)>>24));
+    pc.putc((int)((data & 0x00FF0000)>>16));
+    pc.putc((int)((data & 0x0000FF00)>>8));
+    pc.putc((int)( data & 0x000000FF));
+    pc.putc('\n');
+}
+
+#ifdef SEND_TIME_AS_STRING
+void uartSendCommandArray(char command, char *array, uint8_t len)
+{
+    pc.putc((int)command);
+    pc.putc(':');
+    for (int i = 0; i < len; i++)
+    {
+        pc.putc((int)array[i]);
+    }
+}
+#endif
+
 void uartCharReceived(void)
 {
     while (pc.readable())
@@ -346,17 +369,21 @@ int main(void)
             pc.printf("t:%s", getTimeValue);
 #else
             // Send time in seconds since Jan 1 1970 00:00:00
-            pc.printf("t:%d\n", seconds);
+            // pc.printf("t:%d\n", seconds);
+            uartSendCommand('t', seconds);
 #endif
             // Update status values
             // Seconds left before next power supply turn off
             piraStatus = onPeriodValue - raspberryPiControl.timeoutOnGet();
             piraServicePtr->updateStatus(&piraStatus);
             // Send status to RPi -> time until next sleep and then battery level
-            pc.printf("p:%d\n", piraStatus);
+            // pc.printf("p:%d\n", piraStatus);
+            uartSendCommand('p', piraStatus);
+
             batteryLevelContainer = batteryVoltage.batteryLevelGet();
             piraServicePtr->updateBatteryLevel(&batteryLevelContainer);
-            pc.printf("b:%d\n", batteryLevelContainer);
+            // pc.printf("b:%d\n", batteryLevelContainer);
+            uartSendCommand('b', (uint32_t)batteryLevelContainer);
 
 #if defined(DEBUG)
             pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
