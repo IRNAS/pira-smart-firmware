@@ -390,12 +390,20 @@ int main(void)
             piraServicePtr->updateStatus(&piraStatus);
             // Send status to RPi -> time until next sleep and then battery level
             // pc.printf("p:%d\n", piraStatus);
-            uartSendCommand('p', piraStatus);
+            uartSendCommand('o', piraStatus);
 
             batteryLevelContainer = batteryVoltage.batteryLevelGet();
             piraServicePtr->updateBatteryLevel(&batteryLevelContainer);
             // pc.printf("b:%d\n", batteryLevelContainer);
             uartSendCommand('b', (uint32_t)batteryLevelContainer);
+
+            // Send rest of the values in order to verify changes
+            uartSendCommand('p', onPeriodValue);
+            uartSendCommand('s', offPeriodValue);
+            uartSendCommand('r', rebootThresholdValue);
+            uartSendCommand('w', wakeupThresholdValue);
+            // Send RPi status pin value
+            uartSendCommand('a', (uint32_t)raspberryPiStatus.read());
 
 #if defined(DEBUG)
             pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
@@ -404,6 +412,7 @@ int main(void)
             pc.printf("rebootThresholdValue = %d\n", rebootThresholdValue);
             pc.printf("wakeupThresholdValue = %d\n", wakeupThresholdValue);
             pc.printf("turnOnRpiState = %d\n", turnOnRpiState); 
+            pc.printf("Status Pin = %d\n", raspberryPiStatus.read());
 #endif
             raspberryPiControl.powerHandler(&raspberryPiStatus, 
                                             &powerEnable5V,
