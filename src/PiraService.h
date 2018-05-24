@@ -19,25 +19,29 @@
 
 #include "string.h"
 
+#define PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE     6
+
 class PiraService {
 public:
-    const static uint16_t PIRA_SERVICE_UUID                      = 0xB000;
-    const static uint16_t PIRA_SET_TIME_CHARACTERISTIC_UUID      = 0xB001;
-    const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID      = 0xB002;
-    const static uint16_t PIRA_STATUS_CHARACTERISTIC_UUID        = 0xB003;
-    const static uint16_t PIRA_ON_PERIOD_CHARACTERISTIC_UUID     = 0xB004;
-    const static uint16_t PIRA_OFF_PERIOD_CHARACTERISTIC_UUID    = 0xB005;
-    const static uint16_t PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID = 0xB006;
-    const static uint16_t PIRA_TURN_ON_RPI_CHARACTERISTIC_UUID    = 0xB007;
- 
+    const static uint16_t PIRA_SERVICE_UUID                             = 0xB000;
+    const static uint16_t PIRA_SET_TIME_CHARACTERISTIC_UUID             = 0xB001;
+    const static uint16_t PIRA_GET_TIME_CHARACTERISTIC_UUID             = 0xB002;
+    const static uint16_t PIRA_STATUS_CHARACTERISTIC_UUID               = 0xB003;
+    const static uint16_t PIRA_ON_PERIOD_CHARACTERISTIC_UUID            = 0xB004;
+    const static uint16_t PIRA_OFF_PERIOD_CHARACTERISTIC_UUID           = 0xB005;
+    const static uint16_t PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID        = 0xB006;
+    const static uint16_t PIRA_TURN_ON_RPI_CHARACTERISTIC_UUID          = 0xB007;
+    const static uint16_t PIRA_COMMANDS_INTERFACE_CHARACTERISTIC_UUID   = 0xB008;
+
     PiraService(BLEDevice &_ble, 
-                uint32_t  piraSetTimeInitValue           = 0,
-                uint32_t  piraGetStatusInitValue         = 0,
-                char      *piraGetTimeInitValue          = NULL,
-                uint32_t  piraOnPeriodInitValue          = 0,
-                uint32_t  piraOffPeriodInitValue         = 0,
-                uint8_t   piraBatteryLevelInitValue      = 0,
-                bool      piraTurnOnRpiStateInitValue    = 0) :
+                uint32_t  piraSetTimeInitValue            = 0,
+                uint32_t  piraGetStatusInitValue          = 0,
+                char      *piraGetTimeInitValue           = NULL,
+                uint32_t  piraOnPeriodInitValue           = 0,
+                uint32_t  piraOffPeriodInitValue          = 0,
+                uint8_t   piraBatteryLevelInitValue       = 0,
+                bool      piraTurnOnRpiStateInitValue     = 0,
+                char      *piraCommandsInterfaceInitValue = NULL) :
         ble(_ble), 
         setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, &piraSetTimeInitValue),
         getTime(PIRA_GET_TIME_CHARACTERISTIC_UUID, 
@@ -49,7 +53,12 @@ public:
         onPeriodSeconds(PIRA_ON_PERIOD_CHARACTERISTIC_UUID, &piraOnPeriodInitValue),
         offPeriodSeconds(PIRA_OFF_PERIOD_CHARACTERISTIC_UUID, &piraOffPeriodInitValue),
         getBatteryLevel(PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID, &piraBatteryLevelInitValue),
-        turnOnRpiState(PIRA_TURN_ON_RPI_CHARACTERISTIC_UUID, &piraTurnOnRpiStateInitValue)
+        turnOnRpiState(PIRA_TURN_ON_RPI_CHARACTERISTIC_UUID, &piraTurnOnRpiStateInitValue),
+        commandsInterface(PIRA_COMMANDS_INTERFACE_CHARACTERISTIC_UUID, 
+                          (uint8_t *)piraCommandsInterfaceInitValue,
+                          0,
+                          PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE,
+                          GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE)
     {
         GattCharacteristic *charTable[] = {&setTime, 
                                            &getTime, 
@@ -57,7 +66,8 @@ public:
                                            &onPeriodSeconds, 
                                            &offPeriodSeconds, 
                                            &getBatteryLevel,
-                                           &turnOnRpiState};
+                                           &turnOnRpiState,
+                                           &commandsInterface};
         GattService         piraService(PIRA_SERVICE_UUID, charTable, sizeof(charTable) / sizeof(GattCharacteristic *));
         ble.addService(piraService);
     }
@@ -96,6 +106,11 @@ public:
     {
         return turnOnRpiState.getValueHandle();
     }
+
+    GattAttribute::Handle_t getCommandsInterfaceValueHandle() const
+    {
+        return commandsInterface.getValueHandle();
+    }
     
 private:
     BLEDevice                             &ble;
@@ -108,6 +123,8 @@ private:
     WriteOnlyGattCharacteristic<uint32_t> offPeriodSeconds;
     ReadOnlyGattCharacteristic<uint8_t>   getBatteryLevel;
     WriteOnlyGattCharacteristic<bool>     turnOnRpiState;
+    //Commands interface
+    GattCharacteristic                    commandsInterface;
 };
  
 #endif /* #ifndef __BLE_PIRA_SERVICE_H__ */

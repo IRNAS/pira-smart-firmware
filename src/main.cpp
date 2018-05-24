@@ -57,6 +57,10 @@ BatteryVoltage batteryVoltage;
 // UART Parser object
 //UartParser uartParser;
 
+//Service pointers declarations
+LEDService  *ledServicePtr;
+PiraService *piraServicePtr;
+
 const static char     DEVICE_NAME[] = "PiraSmart";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID, PiraService::PIRA_SERVICE_UUID};
 uint32_t piraStatus;
@@ -70,15 +74,13 @@ char *temp;
 uint8_t sendTime; 
 uint8_t batteryLevelContainer;
 uint8_t rxBuffer[RX_BUFFER_SIZE];
+uint8_t rxBufferBLE[PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE];
 uint8_t rxIndex;
+uint8_t rxIndexBLE;
 bool turnOnRpiState;
 
 Ticker ticker;
  
-//Service pointers declarations
-LEDService  *ledServicePtr;
-PiraService *piraServicePtr;
-
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
     BLE::Instance().gap().startAdvertising();
@@ -125,6 +127,11 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
     else if ((params->handle == piraServicePtr->getTurnOnRpiStateValueHandle()) && (params->len == 1))
     {
         turnOnRpiState = *(params->data);
+    }   
+    else if (params->handle == piraServicePtr->getCommandsInterfaceValueHandle())
+    {
+        memset(&rxBufferBLE, 0x00, sizeof(rxBufferBLE)); 
+        memcpy(&rxBufferBLE, params->data, params->len);  
     }
 }
  
@@ -329,7 +336,12 @@ int main(void)
     {
         rxBuffer[i] = 0;
     }
+    for (int i = 0; i < PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE; i++)
+    {
+        rxBufferBLE[i] = 0;
+    }
     rxIndex = 0;
+    rxIndexBLE = 0;
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
