@@ -39,10 +39,20 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
         case WAIT_STATUS_ON_STATE:
             //Wait when RaspberryPi pulls up STATUS pin
             //NOTE: Temporarely check reversed logic
+            timeoutOn++;
+
             if (raspberryPiStatus->read())
             {
                 //Add some timeout also
                 state = WAKEUP_STATE;
+            }
+            else if (timeoutOn >= onThreshold)
+            {
+                //Turn Off 5V power supply
+                powerEnable5V->write(0);
+                //Reset timeout counter
+                timeoutOn = 0;
+                state = IDLE_STATE;
             }
 
             break;
