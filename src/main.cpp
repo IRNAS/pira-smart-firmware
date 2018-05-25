@@ -133,6 +133,18 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
         memset(&rxBufferBLE, 0x00, sizeof(rxBufferBLE)); 
         memcpy(&rxBufferBLE, params->data, params->len);  
     }
+    else if ((params->handle == piraServicePtr->getRebootPeriodSecondsValueHandle()) && (params->len == 4))
+    {
+        memset(&rebootThresholdValue, 0x00, sizeof(rebootThresholdValue)); 
+        memcpy(&rebootThresholdValue, params->data, params->len);  
+        //offPeriodValue = *(params->data);
+    }
+    else if ((params->handle == piraServicePtr->getWakeupPeriodSecondsValueHandle()) && (params->len == 4))
+    {
+        memset(&wakeupThresholdValue, 0x00, sizeof(wakeupThresholdValue)); 
+        memcpy(&wakeupThresholdValue, params->data, params->len);  
+        //offPeriodValue = *(params->data);
+    }
 }
  
 /**
@@ -187,7 +199,10 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
                                      onPeriodValue, 
                                      offPeriodValue, 
                                      batteryLevelContainer,
-                                     turnOnRpiState);
+                                     turnOnRpiState,
+                                     NULL,
+                                     rebootThresholdValue,
+                                     wakeupThresholdValue);
     
     /* setup advertising */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -405,6 +420,11 @@ int main(void)
             // Send RPi status pin value
             uartSendCommand('a', (uint32_t)raspberryPiStatus.read());
 
+            // Update BLE containers
+            piraServicePtr->updateOnPeriodSeconds(&onPeriodValue);
+            piraServicePtr->updateOffPeriodSeconds(&offPeriodValue);
+            piraServicePtr->updateRebootPeriodSeconds(&rebootThresholdValue);
+            piraServicePtr->updateWakeupPeriodSeconds(&wakeupThresholdValue);
 #if defined(DEBUG)
             pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
             pc.printf("onPeriodValue = %d\n", onPeriodValue);

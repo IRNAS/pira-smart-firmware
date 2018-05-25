@@ -32,6 +32,8 @@ public:
     const static uint16_t PIRA_BATTERY_LEVEL_CHARACTERISTIC_UUID        = 0xB006;
     const static uint16_t PIRA_TURN_ON_RPI_CHARACTERISTIC_UUID          = 0xB007;
     const static uint16_t PIRA_COMMANDS_INTERFACE_CHARACTERISTIC_UUID   = 0xB008;
+    const static uint16_t PIRA_REBOOT_PERIOD_CHARACTERISTIC_UUID        = 0xB009;
+    const static uint16_t PIRA_WAKEUP_PERIOD_CHARACTERISTIC_UUID        = 0xB00A;
 
     PiraService(BLEDevice &_ble, 
                 uint32_t  piraSetTimeInitValue            = 0,
@@ -41,7 +43,9 @@ public:
                 uint32_t  piraOffPeriodInitValue          = 0,
                 uint8_t   piraBatteryLevelInitValue       = 0,
                 bool      piraTurnOnRpiStateInitValue     = 0,
-                char      *piraCommandsInterfaceInitValue = NULL) :
+                char      *piraCommandsInterfaceInitValue = NULL,
+                uint32_t  piraRebootPeriodInitValue       = 0,
+                uint32_t  piraWakeupPeriodInitValue       = 0) :
         ble(_ble), 
         setTime(PIRA_SET_TIME_CHARACTERISTIC_UUID, &piraSetTimeInitValue),
         getTime(PIRA_GET_TIME_CHARACTERISTIC_UUID, 
@@ -58,7 +62,9 @@ public:
                           (uint8_t *)piraCommandsInterfaceInitValue,
                           0,
                           PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE,
-                          GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE)
+                          GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE),
+        rebootPeriodSeconds(PIRA_REBOOT_PERIOD_CHARACTERISTIC_UUID, &piraRebootPeriodInitValue),
+        wakeupPeriodSeconds(PIRA_WAKEUP_PERIOD_CHARACTERISTIC_UUID, &piraWakeupPeriodInitValue)
     {
         GattCharacteristic *charTable[] = {&setTime, 
                                            &getTime, 
@@ -67,16 +73,14 @@ public:
                                            &offPeriodSeconds, 
                                            &getBatteryLevel,
                                            &turnOnRpiState,
-                                           &commandsInterface};
+                                           &commandsInterface,
+                                           &rebootPeriodSeconds,
+                                           &wakeupPeriodSeconds};
         GattService         piraService(PIRA_SERVICE_UUID, charTable, sizeof(charTable) / sizeof(GattCharacteristic *));
         ble.addService(piraService);
     }
  
-    GattAttribute::Handle_t getSetTimeValueHandle() const 
-    {
-        return setTime.getValueHandle();
-    }
-
+    //Update functions
     void updateTime(char *time)
     {
         ble.gattServer().write(getTime.getValueHandle(), (const uint8_t *)time, strlen((const char *)time));
@@ -87,6 +91,32 @@ public:
         ble.gattServer().write(getStatus.getValueHandle(), (const uint8_t *)status, sizeof(uint32_t));
     }
 
+    void updateBatteryLevel(uint8_t *batteryLevel)
+    {
+        ble.gattServer().write(getBatteryLevel.getValueHandle(), (const uint8_t *)batteryLevel, sizeof(uint8_t));
+    }
+
+    void updateOnPeriodSeconds(uint32_t *onPeriodSecondsValue)
+    {
+        ble.gattServer().write(onPeriodSeconds.getValueHandle(), (const uint8_t *)onPeriodSecondsValue, sizeof(uint32_t));
+    }
+
+    void updateOffPeriodSeconds(uint32_t *offPeriodSecondsValue)
+    {
+        ble.gattServer().write(offPeriodSeconds.getValueHandle(), (const uint8_t *)offPeriodSecondsValue, sizeof(uint32_t));
+    }
+
+    void updateRebootPeriodSeconds(uint32_t *rebootPeriodSecondsValue)
+    {
+        ble.gattServer().write(rebootPeriodSeconds.getValueHandle(), (const uint8_t *)rebootPeriodSecondsValue, sizeof(uint32_t));
+    }
+
+    void updateWakeupPeriodSeconds(uint32_t *wakeupPeriodSecondsValue)
+    {
+        ble.gattServer().write(wakeupPeriodSeconds.getValueHandle(), (const uint8_t *)wakeupPeriodSecondsValue, sizeof(uint32_t));
+    }
+
+//Read functions
     GattAttribute::Handle_t getOnPeriodSecondsValueHandle() const 
     {
         return onPeriodSeconds.getValueHandle();
@@ -97,9 +127,9 @@ public:
         return offPeriodSeconds.getValueHandle();
     }
 
-    void updateBatteryLevel(uint8_t *batteryLevel)
+    GattAttribute::Handle_t getSetTimeValueHandle() const 
     {
-        ble.gattServer().write(getBatteryLevel.getValueHandle(), (const uint8_t *)batteryLevel, sizeof(uint8_t));
+        return setTime.getValueHandle();
     }
 
     GattAttribute::Handle_t getTurnOnRpiStateValueHandle() const 
@@ -112,19 +142,31 @@ public:
         return commandsInterface.getValueHandle();
     }
     
+    GattAttribute::Handle_t getRebootPeriodSecondsValueHandle() const 
+    {
+        return rebootPeriodSeconds.getValueHandle();
+    }
+
+    GattAttribute::Handle_t getWakeupPeriodSecondsValueHandle() const 
+    {
+        return wakeupPeriodSeconds.getValueHandle();
+    }
+
 private:
     BLEDevice                             &ble;
     WriteOnlyGattCharacteristic<uint32_t> setTime;
     GattCharacteristic                    getTime;
     ReadOnlyGattCharacteristic<uint32_t>  getStatus;
     // onPeriod is amout of time RPi needs to be awake before going to sleep
-    WriteOnlyGattCharacteristic<uint32_t> onPeriodSeconds;
+    ReadWriteGattCharacteristic<uint32_t> onPeriodSeconds;
     // offPeriod is amount of time RPi needs to sleep for before next wakeup
-    WriteOnlyGattCharacteristic<uint32_t> offPeriodSeconds;
+    ReadWriteGattCharacteristic<uint32_t> offPeriodSeconds;
     ReadOnlyGattCharacteristic<uint8_t>   getBatteryLevel;
-    WriteOnlyGattCharacteristic<bool>     turnOnRpiState;
+    ReadWriteGattCharacteristic<bool>     turnOnRpiState;
     //Commands interface
     GattCharacteristic                    commandsInterface;
+    ReadWriteGattCharacteristic<uint32_t> rebootPeriodSeconds;
+    ReadWriteGattCharacteristic<uint32_t> wakeupPeriodSeconds;
 };
  
 #endif /* #ifndef __BLE_PIRA_SERVICE_H__ */

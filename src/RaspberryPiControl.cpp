@@ -52,6 +52,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 powerEnable5V->write(0);
                 //Reset timeout counter
                 timeoutOn = 0;
+                forceOffPeriodEnd = false;
                 state = IDLE_STATE;
             }
 
@@ -79,6 +80,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 powerEnable5V->write(0);
                 //Reset timeout counter
                 timeoutOn = 0;
+                forceOffPeriodEnd = false;
                 state = IDLE_STATE;
             }
 
@@ -98,6 +100,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 {
                     //Definitely turn off RPi power supply
                     powerEnable5V->write(0);
+                    forceOffPeriodEnd = false;
                     state = IDLE_STATE;
                 }
             }   
