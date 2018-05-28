@@ -25,6 +25,8 @@
 #include "BufferedSerial.h"
 //#include "UARTParser.h"
  
+//#include "mbed_memory_status.h"
+
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
 
@@ -292,11 +294,8 @@ void uartCommandSendArray(char command, char *array, uint8_t len)
 
 void uartCommandReceive(void)
 {
-//    printf("Enter UART interrupt routine\n");
-
     while (pc.readable())
     {
-        //printf("UART char received\n");
         // Receive characters 
         rxBuffer[rxIndex] = pc.getc();
 
@@ -377,7 +376,6 @@ void init_uart(void)
 {
     pc.baud(115200);
     //pc.printf("Start...\n");
-    pc.attach(&uartCommandReceive, pc.RxIrq);
 }
 
 void init_rtc(void)
@@ -416,6 +414,8 @@ void init_rtc(void)
 
 int main(void)
 {
+//    print_all_thread_info();
+//    print_heap_and_isr_stack_info();
     // Enable 3V3 power for RTC and LoRa
     powerEnable3V3 = 1; 
     // Initially enable RaspberryPi power
@@ -448,11 +448,10 @@ int main(void)
      * BLE object is used in the main loop below. */
     while (ble.hasInitialized()  == false) { /* spin loop */ }
  
-    while (true) {
+    while (true) 
+    {
         ble.waitForEvent();
 
-        //testing UART
-        
         uartCommandReceive();
         
         if (sendTime)
