@@ -238,27 +238,27 @@ void uartCommandParse(uint8_t *rxBuffer, uint8_t len)
         switch(firstChar)
         {
             case 't':
-                pc.printf("t: received\n");
+                //pc.printf("t: received\n");
                 rtc.time((time_t)data);
                 break;
             case 'p':
-                pc.printf("p: received\n");
+                //pc.printf("p: received\n");
                 onPeriodValue = data;
                 break;
             case 's':
-                pc.printf("s: received\n");
+                //pc.printf("s: received\n");
                 offPeriodValue = data;
                 break;
             case 'c':
-                pc.printf("c: received\n");
+                //pc.printf("c: received\n");
                 pc.printf("To be defined how to react on c: command\n");
                 break;
             case 'r':
-                pc.printf("r: received\n");
+                //pc.printf("r: received\n");
                 rebootThresholdValue = data;
                 break;
             case 'w':
-                pc.printf("w: received\n");
+                //pc.printf("w: received\n");
                 wakeupThresholdValue = data;
                 break;
             default:
@@ -376,8 +376,8 @@ void uartCommandReceive(void)
 void init_uart(void)
 {
     pc.baud(115200);
-    pc.printf("Start...\n");
-    //pc.attach(&uartCommandReceive, pc.RxIrq);
+    //pc.printf("Start...\n");
+    pc.attach(&uartCommandReceive, pc.RxIrq);
 }
 
 void init_rtc(void)
