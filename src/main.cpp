@@ -22,6 +22,7 @@
 #include "ISL1208.h"
 #include "RaspberryPiControl.h"
 #include "BatteryVoltage.h"
+#include "BufferedSerial.h"
 //#include "UARTParser.h"
  
 //Initial Time is Mon, 1 Jan 2018 00:00:00
@@ -33,7 +34,7 @@
 //#define ON_PERIOD_INIT_VALUE_s   30
 #define OFF_PERIOD_INIT_VALUE_s  30
 
-#define RX_BUFFER_SIZE      6        //Size in B
+#define RX_BUFFER_SIZE      7        //Size in B
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
@@ -45,7 +46,8 @@ DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);
 DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS);
 
 // Create UART object
-Serial pc(UART_TX, UART_RX);
+//Serial pc(UART_TX, UART_RX);
+BufferedSerial pc(UART_TX, UART_RX);
 // Create I2C object
 I2C i2c(I2C_SDA, I2C_SCL);
 // Create ISL1208 object
@@ -213,7 +215,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
-void parseCommands(uint8_t *rxBuffer, uint8_t len)
+void uartCommandParse(uint8_t *rxBuffer, uint8_t len)
 {
     uint8_t firstChar = rxBuffer[0];
     uint8_t secondChar = rxBuffer[1];
@@ -236,21 +238,27 @@ void parseCommands(uint8_t *rxBuffer, uint8_t len)
         switch(firstChar)
         {
             case 't':
+                pc.printf("t: received\n");
                 rtc.time((time_t)data);
                 break;
             case 'p':
+                pc.printf("p: received\n");
                 onPeriodValue = data;
                 break;
             case 's':
+                pc.printf("s: received\n");
                 offPeriodValue = data;
                 break;
             case 'c':
+                pc.printf("c: received\n");
                 pc.printf("To be defined how to react on c: command\n");
                 break;
             case 'r':
+                pc.printf("r: received\n");
                 rebootThresholdValue = data;
                 break;
             case 'w':
+                pc.printf("w: received\n");
                 wakeupThresholdValue = data;
                 break;
             default:
@@ -259,7 +267,7 @@ void parseCommands(uint8_t *rxBuffer, uint8_t len)
     }
 }
 
-void uartSendCommand(char command, uint32_t data)
+void uartCommandSend(char command, uint32_t data)
 {
     pc.putc((int)command);
     pc.putc(':');
@@ -271,7 +279,7 @@ void uartSendCommand(char command, uint32_t data)
 }
 
 #ifdef SEND_TIME_AS_STRING
-void uartSendCommandArray(char command, char *array, uint8_t len)
+void uartCommandSendArray(char command, char *array, uint8_t len)
 {
     pc.putc((int)command);
     pc.putc(':');
@@ -282,18 +290,85 @@ void uartSendCommandArray(char command, char *array, uint8_t len)
 }
 #endif
 
-void uartCharReceived(void)
+void uartCommandReceive(void)
 {
+//    printf("Enter UART interrupt routine\n");
+
     while (pc.readable())
     {
+        //printf("UART char received\n");
         // Receive characters 
         rxBuffer[rxIndex] = pc.getc();
-        rxIndex++;
-        if (rxIndex >= RX_BUFFER_SIZE)
+
+        if (rxIndex == 0)
         {
-            parseCommands(rxBuffer, RX_BUFFER_SIZE);
-            rxIndex = 0;
-            break;
+            if (rxBuffer[rxIndex] != 't' &&
+                rxBuffer[rxIndex] != 'p' &&
+                rxBuffer[rxIndex] != 's' &&
+                rxBuffer[rxIndex] != 'c' &&
+                rxBuffer[rxIndex] != 'r' &&
+                rxBuffer[rxIndex] != 'w')
+            {
+                //rxIndex reset is added for clarity
+                rxIndex = 0;
+                //break should not happen
+                //break;
+            }
+            else
+            {
+                rxIndex++;
+            }
+                
+        }
+        else if (rxIndex == 1)
+        {
+            if (rxBuffer[rxIndex] != ':')
+            {
+                rxIndex = 0;
+                //break;
+            }
+            else
+            {
+                rxIndex++;
+            }
+        }
+        else
+        {
+            if (rxBuffer[rxIndex] == '\n')
+            {
+                //All data withing the packet has been received, parse the packet and execute commands
+                if (rxIndex == 6)
+                {
+                    //pc.printf("All characters has been received\n");
+                    uartCommandParse(rxBuffer, RX_BUFFER_SIZE);
+                    rxIndex = 0;
+                    //break;
+                }
+                else
+                {
+                    for (int i = 0; i < RX_BUFFER_SIZE; i++)
+                    {
+                        rxBuffer[i] = 0;
+                    }
+                    rxIndex = 0;
+                } 
+            }
+            else if (rxIndex == 6)
+            {
+                for (int i = 0; i < RX_BUFFER_SIZE; i++)
+                {
+                    rxBuffer[i] = 0;
+                }
+                rxIndex = 0;
+            }
+            else
+            {
+                rxIndex++;
+                if (rxIndex > 6)
+                {
+                    rxIndex = 0;
+                }
+            }
         }
     }
 }
@@ -302,7 +377,7 @@ void init_uart(void)
 {
     pc.baud(115200);
     pc.printf("Start...\n");
-    pc.attach(&uartCharReceived, pc.RxIrq);
+    //pc.attach(&uartCommandReceive, pc.RxIrq);
 }
 
 void init_rtc(void)
@@ -375,6 +450,10 @@ int main(void)
  
     while (true) {
         ble.waitForEvent();
+
+        //testing UART
+        
+        uartCommandReceive();
         
         if (sendTime)
         {
@@ -397,7 +476,7 @@ int main(void)
 #else
             // Send time in seconds since Jan 1 1970 00:00:00
             // pc.printf("t:%d\n", seconds);
-            uartSendCommand('t', seconds);
+            uartCommandSend('t', seconds);
 #endif
             // Update status values
             // Seconds left before next power supply turn off
@@ -405,20 +484,20 @@ int main(void)
             piraServicePtr->updateStatus(&piraStatus);
             // Send status to RPi -> time until next sleep and then battery level
             // pc.printf("p:%d\n", piraStatus);
-            uartSendCommand('o', piraStatus);
+            uartCommandSend('o', piraStatus);
 
             batteryLevelContainer = batteryVoltage.batteryLevelGet();
             piraServicePtr->updateBatteryLevel(&batteryLevelContainer);
             // pc.printf("b:%d\n", batteryLevelContainer);
-            uartSendCommand('b', (uint32_t)batteryLevelContainer);
+            uartCommandSend('b', (uint32_t)batteryLevelContainer);
 
             // Send rest of the values in order to verify changes
-            uartSendCommand('p', onPeriodValue);
-            uartSendCommand('s', offPeriodValue);
-            uartSendCommand('r', rebootThresholdValue);
-            uartSendCommand('w', wakeupThresholdValue);
+            uartCommandSend('p', onPeriodValue);
+            uartCommandSend('s', offPeriodValue);
+            uartCommandSend('r', rebootThresholdValue);
+            uartCommandSend('w', wakeupThresholdValue);
             // Send RPi status pin value
-            uartSendCommand('a', (uint32_t)raspberryPiStatus.read());
+            uartCommandSend('a', (uint32_t)raspberryPiStatus.read());
 
             // Update BLE containers
             piraServicePtr->updateOnPeriodSeconds(&onPeriodValue);
