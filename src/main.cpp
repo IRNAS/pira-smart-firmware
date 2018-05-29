@@ -26,6 +26,10 @@
 //#include "UARTParser.h"
  
 //#include "mbed_memory_status.h"
+#define CONN_SUP_TIMEOUT 6000 // six seconds
+#define SLAVE_LATENCY 4 // four events can be ignored, the fifth must be met
+#define MIN_CONN_INTERVAL 250 //250 milliseconds
+#define MAX_CONN_INTERVAL 350 //350 milliseconds
 
 //Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
