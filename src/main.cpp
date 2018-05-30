@@ -23,15 +23,14 @@
 #include "RaspberryPiControl.h"
 #include "BatteryVoltage.h"
 #include "BufferedSerial.h"
-//#include "UARTParser.h"
  
-//#include "mbed_memory_status.h"
+// Not sure if these defines regarding BLE are needed at all 
 #define CONN_SUP_TIMEOUT 6000 // six seconds
 #define SLAVE_LATENCY 4 // four events can be ignored, the fifth must be met
 #define MIN_CONN_INTERVAL 250 //250 milliseconds
 #define MAX_CONN_INTERVAL 350 //350 milliseconds
 
-//Initial Time is Mon, 1 Jan 2018 00:00:00
+// Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
 
 #define ON_PERIOD_INIT_VALUE_s   1800
@@ -41,6 +40,8 @@
 #define OFF_PERIOD_INIT_VALUE_s  30
 
 #define RX_BUFFER_SIZE      7        //Size in B
+
+#define BLE_WATCHDOG_TIMER_THRESHOLD      (600)        //10 minutes in seconds
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
@@ -62,8 +63,6 @@ ISL1208 rtc(&i2c);
 RaspberryPiControl raspberryPiControl;
 // Battery Voltage object
 BatteryVoltage batteryVoltage;
-// UART Parser object
-//UartParser uartParser;
 
 //Service pointers declarations
 LEDService  *ledServicePtr;
@@ -86,20 +85,56 @@ uint8_t rxBufferBLE[PIRA_SERVICE_COMMANDS_RX_BUFFER_SIZE];
 uint8_t rxIndex;
 uint8_t rxIndexBLE;
 bool turnOnRpiState;
+bool bleConnected;
+uint32_t bleWatchdogTimer;
 
 Ticker ticker;
  
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
+#ifdef DEBUG_BLE
+    pc.printf("BLE disconnected\n");
+#endif
+    
+    bleConnected = false;
+#ifndef DEBUG_BLE
+    bleWatchdogTimer = 0;
+#endif
+
     BLE::Instance().gap().startAdvertising();
+
+#ifdef DEBUG_BLE
+    pc.printf("bleConnected = %d\n", bleConnected);
+    pc.printf("bleWatchdogTimer = %d\n", bleWatchdogTimer);
+#endif
 }
- 
+
+void connectionCallback(const Gap::ConnectionCallbackParams_t *params)
+{
+#ifdef DEBUG_BLE
+    pc.printf("BLE connected\n");
+#endif
+
+    bleWatchdogTimer = 0;
+    bleConnected = true;
+
+#ifdef DEBUG_BLE
+    pc.printf("bleConnected = %d\n", bleConnected);
+    pc.printf("bleWatchdogTimer = %d\n", bleWatchdogTimer);
+#endif
+}
+
 void periodicCallback(void)
 {
     // Do blinky on LED1 to indicate system aliveness.
     alivenessLED = !alivenessLED; 
     // Set flag to update status every second    
     sendTime = 1; 
+    // If BLE connected, count BLE WDT timer
+    if (bleConnected)
+    {
+        bleWatchdogTimer++;
+    }
 }
  
 /**
@@ -186,6 +221,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     }
  
     ble.gap().onDisconnection(disconnectionCallback);
+    ble.gap().onConnection(connectionCallback);
     ble.gattServer().onDataWritten(onDataWrittenCallback);
  
     bool initialValueForLEDCharacteristic = false;
@@ -275,6 +311,7 @@ void uartCommandParse(uint8_t *rxBuffer, uint8_t len)
 
 void uartCommandSend(char command, uint32_t data)
 {
+#ifndef DEBUG_BLE
     pc.putc((int)command);
     pc.putc(':');
     pc.putc((int)((data & 0xFF000000)>>24));
@@ -282,6 +319,7 @@ void uartCommandSend(char command, uint32_t data)
     pc.putc((int)((data & 0x0000FF00)>>8));
     pc.putc((int)( data & 0x000000FF));
     pc.putc('\n');
+#endif
 }
 
 #ifdef SEND_TIME_AS_STRING
@@ -418,8 +456,6 @@ void init_rtc(void)
 
 int main(void)
 {
-//    print_all_thread_info();
-//    print_heap_and_isr_stack_info();
     // Enable 3V3 power for RTC and LoRa
     powerEnable3V3 = 1; 
     // Initially enable RaspberryPi power
@@ -436,6 +472,8 @@ int main(void)
     }
     rxIndex = 0;
     rxIndexBLE = 0;
+    bleConnected = false;
+    bleWatchdogTimer = 0;
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
@@ -455,6 +493,16 @@ int main(void)
     while (true) 
     {
         ble.waitForEvent();
+
+        if (bleConnected)
+        {
+            if (bleWatchdogTimer > BLE_WATCHDOG_TIMER_THRESHOLD)
+            {
+                BLE::Instance().gap().disconnect(Gap::LOCAL_HOST_TERMINATED_CONNECTION);
+                bleConnected = false;
+                bleWatchdogTimer = 0;
+            }
+        }
 
         uartCommandReceive();
         
