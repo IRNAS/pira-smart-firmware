@@ -49,7 +49,7 @@
 #elif (TARGET == TARGET_PIRA_SMART)
     
 //    #define DEBUG
-    #define DEBUG_BLE
+//    #define DEBUG_BLE
 //    #define SEND_TIME_AS_STRING
 
     #define LED_ON      1
