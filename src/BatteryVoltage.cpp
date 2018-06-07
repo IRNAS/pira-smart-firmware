@@ -7,11 +7,11 @@ BatteryVoltage::BatteryVoltage(void)
     // Initialize ADC peripheral
     // Enable ADC peripheral
     NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Enabled;
-    // 8bit result, convert channel 5 and use interanl VBG reference
+    // 8bit result, convert channel 2 and use interanl VBG reference
     NRF_ADC->CONFIG = (ADC_CONFIG_RES_8bit                        << ADC_CONFIG_RES_Pos)    |
                       (ADC_CONFIG_INPSEL_AnalogInputNoPrescaling  << ADC_CONFIG_INPSEL_Pos) |
                       (ADC_CONFIG_REFSEL_VBG                      << ADC_CONFIG_REFSEL_Pos) |
-                      (ADC_CONFIG_PSEL_AnalogInput5               << ADC_CONFIG_PSEL_Pos)   |
+                      (ADC_CONFIG_PSEL_AnalogInput2               << ADC_CONFIG_PSEL_Pos)   |
                       (ADC_CONFIG_EXTREFSEL_None                  << ADC_CONFIG_EXTREFSEL_Pos);
 }
  
@@ -19,7 +19,7 @@ uint8_t BatteryVoltage::batteryLevelGet(void)
 {
     // Configure channel and start conversion
     NRF_ADC->CONFIG     &= ~ADC_CONFIG_PSEL_Msk;
-    NRF_ADC->CONFIG     |= ADC_CONFIG_PSEL_AnalogInput5 << ADC_CONFIG_PSEL_Pos;
+    NRF_ADC->CONFIG     |= ADC_CONFIG_PSEL_AnalogInput2 << ADC_CONFIG_PSEL_Pos;
     NRF_ADC->TASKS_START = 1;
     // Wait until conversion is done
     while (((NRF_ADC->BUSY & ADC_BUSY_BUSY_Msk) >> ADC_BUSY_BUSY_Pos) == ADC_BUSY_BUSY_Busy) {};

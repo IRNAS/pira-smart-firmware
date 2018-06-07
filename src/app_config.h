@@ -67,7 +67,7 @@
     #define I2C_SDA     p3
     #define I2C_SCL     p2
 
-    #define ENABLE_3V3_PIN  p1
+    #define ENABLE_3V3_PIN  p0
     #define ENABLE_5V_PIN   p25
 
     #define RASPBERRY_PI_STATUS     p5  //GPIO_BCM17 from RaspberryPi
