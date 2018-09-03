@@ -24,6 +24,7 @@
 #include "BatteryVoltage.h"
 #include "BufferedSerial.h"
  
+ 
 // Not sure if these defines regarding BLE are needed at all 
 #define CONN_SUP_TIMEOUT 6000 // six seconds
 #define SLAVE_LATENCY 4 // four events can be ignored, the fifth must be met
@@ -43,6 +44,8 @@
 
 #define BLE_WATCHDOG_TIMER_THRESHOLD      (600)        //10 minutes in seconds
 
+#define DEBUG
+
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
 DigitalOut fetOutput(FET_OUTPUT, 0);
@@ -50,7 +53,7 @@ DigitalOut fetOutput(FET_OUTPUT, 0);
 DigitalOut powerEnable5V(ENABLE_5V_PIN, 0);
 DigitalOut powerEnable3V3(ENABLE_3V3_PIN, 0);
 
-DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS);
+DigitalIn  raspberryPiStatus(RASPBERRY_PI_STATUS, PullNone);
 
 // Create UART object
 //Serial pc(UART_TX, UART_RX);
@@ -196,7 +199,7 @@ void onDataWrittenCallback(const GattWriteCallbackParams *params) {
 void onBleInitError(BLE &ble, ble_error_t error)
 {
     /* Initialization error handling should go here */
-#if defined(DEBUG)
+#ifdef DEBUG
     pc.printf("Error occured\n");
 #endif
 }
@@ -427,7 +430,7 @@ void init_rtc(void)
     //Try to open the ISL1208
     if (rtc.open()) 
     {
-#if defined(DEBUG)
+#ifdef DEBUG
         pc.printf("Device detected!\n");
 #endif
  
@@ -437,7 +440,7 @@ void init_rtc(void)
         //Check if we need to reset the time
         if (rtc.powerFailed()) 
         {
-#if defined(DEBUG)
+#ifdef DEBUG
             //The time has been lost due to a power complete power failure
             pc.printf("Device has lost power! Resetting time...\n");
 #endif 
@@ -448,7 +451,7 @@ void init_rtc(void)
     }
     else
     {
-#if defined(DEBUG)
+#ifdef DEBUG
         pc.printf("Device NOT detected!\n");
 #endif
     }
@@ -512,7 +515,7 @@ int main(void)
 
             // Get the current time from RTC 
             time_t seconds = rtc.time();
-#if defined(DEBUG)
+#ifdef DEBUG
             pc.printf("Time as a basic string = %s", ctime(&seconds));
 #endif
             
@@ -555,7 +558,7 @@ int main(void)
             piraServicePtr->updateOffPeriodSeconds(&offPeriodValue);
             piraServicePtr->updateRebootPeriodSeconds(&rebootThresholdValue);
             piraServicePtr->updateWakeupPeriodSeconds(&wakeupThresholdValue);
-#if defined(DEBUG)
+#ifdef DEBUG
             pc.printf("Battery level in V = %d\n", (int)(batteryVoltage.batteryVoltageGet(batteryLevelContainer)*100));
             pc.printf("onPeriodValue = %d\n", onPeriodValue);
             pc.printf("offPeriodValue = %d\n", offPeriodValue);

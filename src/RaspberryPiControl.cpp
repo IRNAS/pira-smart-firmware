@@ -20,6 +20,9 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
     switch(state)
     {
         case IDLE_STATE:
+            #ifdef DEBUG
+                pc.printf("IDLE_STATE\n");
+            #endif
             //Check if we need to wakeup RaspberryPi
             timeoutOff++;
             // Typical usecase would be that wakeupThreshold < offThreshold
@@ -37,6 +40,9 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             break;
 
         case WAIT_STATUS_ON_STATE:
+            #ifdef DEBUG
+                pc.printf("WAIT_STATUS_ON_STATE\n");
+            #endif
             //Wait when RaspberryPi pulls up STATUS pin
             //NOTE: Temporarely check reversed logic
             timeoutOn++;
@@ -59,6 +65,9 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             break;
 
         case WAKEUP_STATE:
+            #ifdef DEBUG
+                pc.printf("WAKEUP_STATE\n");
+            #endif
             //Send sensor data and when wakeup period set, shutdown
             //In order for timeout to work, this function should be executed every 1s
 
@@ -87,6 +96,9 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             break;
 
         case REBOOT_DETECTION:
+            #ifdef DEBUG
+                pc.printf("REBOOT_DETECTION\n");
+            #endif
             //Wait for reboot timeout
             timeoutReboot++;
             if (timeoutReboot >= rebootThreshold)
