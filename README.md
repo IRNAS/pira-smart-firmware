@@ -35,7 +35,7 @@ Other values are described in Communication diagram.
 
 All the lines end with linefeed character.
 
-Additionally, sleep period can be set through UART. Value consisted of 4 bytes is expected with LSB byte first. These bytes represent OFF period in seconds. \
+Additionally, safety off period (s) can be set through UART. Value consisted of 4 bytes is expected with LSB byte first. These bytes represent OFF period in seconds. \
 Example: \
 Desired OFF period is 2000s \
 Following values should be sent through UART interface to PiRa device in given order (send 0xD0 first): \
