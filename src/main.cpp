@@ -23,6 +23,7 @@
 #include "RaspberryPiControl.h"
 #include "BatteryVoltage.h"
 #include "BufferedSerial.h"
+#include "HWatchDogTimer.h"
  
  
 // Not sure if these defines regarding BLE are needed at all 
@@ -34,17 +35,15 @@
 // Initial Time is Mon, 1 Jan 2018 00:00:00
 #define TIME_INIT_VALUE  1514764800UL
 
-#define ON_PERIOD_INIT_VALUE_s   1800
-//#define OFF_PERIOD_INIT_VALUE_s  1800
-
-//#define ON_PERIOD_INIT_VALUE_s   30
-#define OFF_PERIOD_INIT_VALUE_s  30
+#define ON_PERIOD_INIT_VALUE_s 7200
+#define OFF_PERIOD_INIT_VALUE_s 7200
 
 #define RX_BUFFER_SIZE      7        //Size in B
 
 #define BLE_WATCHDOG_TIMER_THRESHOLD      (600)        //10 minutes in seconds
+#define HW_WATCHDOG_TIMER_THRESHOLD	10	// value in seconds
 
-#define DEBUG
+//#define DEBUG
 
 DigitalOut alivenessLED(LED_1, 0);
 DigitalOut actuatedLED(LED_2, 0);
@@ -129,6 +128,8 @@ void connectionCallback(const Gap::ConnectionCallbackParams_t *params)
 
 void periodicCallback(void)
 {
+    // HW WatchDog reset    
+    HWatchDogTimer::kick();
     // Do blinky on LED1 to indicate system aliveness.
     alivenessLED = !alivenessLED; 
     // Set flag to update status every second    
@@ -477,6 +478,9 @@ int main(void)
     rxIndexBLE = 0;
     bleConnected = false;
     bleWatchdogTimer = 0;
+
+    // init HW Watchdog timer - attached to blink periodicCallback
+    HWatchDogTimer::init(HW_WATCHDOG_TIMER_THRESHOLD);
 
     // UART needs to be initialized first to use it for communication with RPi
     init_uart();
