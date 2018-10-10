@@ -70,7 +70,7 @@ See: https://github.com/ARMmbed/mbed-cli \
 Then it is required to import code from GitHub:\
 `$ mbed import https://github.com/IRNAS/pira-smart-firmware.git`\
 After import is finished, execute mbed compile command with desired target and tools selected, for example:\
-`$ mbed mbed compile -m RBLAB_BLENANO -t GCC_ARM`\
+`$ mbed compile -m RBLAB_BLENANO -t GCC_ARM`\
 Resulting hex file will be located in build folder (e.g. ./BUILD/RBLAB_BLENANO/GCC_ARM/
 
 ## Download code to the board
