@@ -66,7 +66,8 @@ Online compiler will offer you to save hex file.
 
 ### mbed-cli
 In order to compile the code localy, it is required to install mbed-cli and all dependency tools.\
-See: https://github.com/ARMmbed/mbed-cli \
+Install instructions are in `/docs` folder. \
+For more info see: https://github.com/ARMmbed/mbed-cli \
 Then it is required to import code from GitHub:\
 `$ mbed import https://github.com/IRNAS/pira-smart-firmware.git`\
 After import is finished, execute mbed compile command with desired target and tools selected, for example:\
