@@ -78,7 +78,7 @@ Resulting hex file will be located in build folder (e.g. ./BUILD/RBLAB_BLENANO/G
 In order to download code to mbed platform, just copy hex file to the MBED drive. 
 
 
-#### License
+## License
 
 All our projects are as usefully open-source as possible.
 
