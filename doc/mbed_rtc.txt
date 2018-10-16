@@ -4,7 +4,8 @@ https://os.mbed.com/users/fxschumacher/code/nRF51_rtc_example/file/c1f06d0a5e11/
 https://os.mbed.com/users/fxschumacher/code/nrf51_rtc/
 
 MBED libraries are availabe for these RTCs:
-DS1307
+DS1307 https://os.mbed.com/users/harrypowers/code/DS1307/docs/c3e4da8feb10/classDS1307.html
+       https://os.mbed.com/users/nkhorman/code/Adafruit_RTCLib/
 DS3231 https://os.mbed.com/users/cromda/code/DS3231/
 https://os.mbed.com/components/AM1805-Real-Time-Clock-with-Power-Manage/
 https://os.mbed.com/components/ISL1208-Real-Time-Clock/
