@@ -3,14 +3,12 @@
 
 #include "mbed.h"
 
-class RaspberryPiControl 
-{
+class RaspberryPiControl {
 public:
 
     const static uint32_t REBOOT_TIMEOUT_s = 60;    //1 minute
 
-    enum ControlState
-    {
+    enum ControlState {
         IDLE_STATE             = 0,
         WAIT_STATUS_ON_STATE   = 1,
         WAKEUP_STATE           = 2,
@@ -29,14 +27,16 @@ public:
                       uint32_t rebootThreshold,
                       bool forceOffPeriodEnd);
 
-    uint32_t timeoutOnGet(void)
-    {
+    uint32_t timeoutOnGet(void) {
         return timeoutOn;
     }
 
-    uint32_t timeoutOffGet(void)
-    {
+    uint32_t timeoutOffGet(void) {
         return timeoutOff;
+    }
+
+    bool getRpiState(void) {
+        return rpi_on;
     }
 
 private:
@@ -44,6 +44,7 @@ private:
     uint32_t timeoutOn;
     uint32_t timeoutOff;
     uint32_t timeoutReboot;
+    bool rpi_on;
 };
 
 #endif /* RASPBERRY_PI_CONTROL_H */

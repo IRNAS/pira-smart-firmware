@@ -1,12 +1,12 @@
 #include "RaspberryPiControl.h"
 
-RaspberryPiControl::RaspberryPiControl(void)
-{
+RaspberryPiControl::RaspberryPiControl(void) {
     //Constructor
     state = WAIT_STATUS_ON_STATE;
     timeoutOn = 0;
     timeoutOff = 0;
     timeoutReboot = 0;
+    rpi_on = false;
 }
 
 void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus, 
@@ -17,8 +17,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                                       uint32_t rebootThreshold,
                                       bool forceOffPeriodEnd)
 {
-    switch(state)
-    {
+    switch(state) {
         case IDLE_STATE:
             #ifdef DEBUG
                 pc.printf("IDLE_STATE\n");
@@ -28,7 +27,7 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             // Typical usecase would be that wakeupThreshold < offThreshold
             if ((timeoutOff >= offThreshold)    || 
                 (timeoutOff >= wakeupThreshold) || 
-                forceOffPeriodEnd)
+                forceOffPeriodEnd) 
             {
                 timeoutOff = 0;
                 // Turn OFF RaspberryPi and set on threshold value
@@ -36,7 +35,6 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 powerEnable5V->write(1);
                 state = WAIT_STATUS_ON_STATE;
             }
-
             break;
 
         case WAIT_STATUS_ON_STATE:
@@ -47,13 +45,12 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             //NOTE: Temporarely check reversed logic
             timeoutOn++;
 
-            if (raspberryPiStatus->read())
-            {
+            if (raspberryPiStatus->read()) {
+                //timeoutOn = 0; // we should reset timer?
                 //Add some timeout also
                 state = WAKEUP_STATE;
             }
-            else if (timeoutOn >= onThreshold)
-            {
+            else if (timeoutOn >= onThreshold) {
                 //Turn Off 5V power supply
                 powerEnable5V->write(0);
                 //Reset timeout counter
@@ -61,10 +58,10 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
                 forceOffPeriodEnd = false;
                 state = IDLE_STATE;
             }
-
             break;
 
         case WAKEUP_STATE:
+            rpi_on = true;
             #ifdef DEBUG
                 pc.printf("WAKEUP_STATE\n");
             #endif
@@ -73,26 +70,24 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
 
             //Check status pin and then turn off power supply.
             //Or after timeout, turn off power supply anyway without waiting for status.
-            if (!raspberryPiStatus->read())
-            {
+            if (!raspberryPiStatus->read()) {
                 timeoutReboot = 0; 
                 timeoutOn = 0;
+                rpi_on = false;
                 state = REBOOT_DETECTION;
                 break;
             }
-
             timeoutOn++;
 
-            if (timeoutOn >= onThreshold)
-            {
+            if (timeoutOn >= onThreshold) {
                 //Turn Off 5V power supply
                 powerEnable5V->write(0);
                 //Reset timeout counter
                 timeoutOn = 0;
                 forceOffPeriodEnd = false;
+                rpi_on = false;
                 state = IDLE_STATE;
             }
-
             break;
 
         case REBOOT_DETECTION:
@@ -101,15 +96,12 @@ void RaspberryPiControl::powerHandler(DigitalIn *raspberryPiStatus,
             #endif
             //Wait for reboot timeout
             timeoutReboot++;
-            if (timeoutReboot >= rebootThreshold)
-            {
+            if (timeoutReboot >= rebootThreshold) {
                 timeoutReboot = 0;
-                if(raspberryPiStatus->read())
-                {
+                if(raspberryPiStatus->read()) {
                     state = WAKEUP_STATE;
                 }
-                else
-                {
+                else {
                     //Definitely turn off RPi power supply
                     powerEnable5V->write(0);
                     forceOffPeriodEnd = false;

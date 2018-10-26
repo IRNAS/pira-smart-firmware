@@ -12,7 +12,6 @@
 #define TARGET                  TARGET_PIRA_SMART
 
 #if (TARGET == TARGET_DEFAULT)
-   
     #define LED_ON      0
     #define LED_OFF     1
 
@@ -25,7 +24,6 @@
     #define UART_RX     USBRX
 
 #elif (TARGET == TARGET_RBLABBLENANO)
-    
     #define LED_ON      0
     #define LED_OFF     1
 
@@ -47,7 +45,6 @@
     #define ENABLE_5V_PIN   p19
 
 #elif (TARGET == TARGET_PIRA_SMART)
-    
 //    #define DEBUG
 //    #define DEBUG_BLE
 //    #define SEND_TIME_AS_STRING
@@ -60,7 +57,6 @@
 
 //    #define UART_TX     p19
 //    #define UART_RX     p18
-
     #define UART_TX     p18
     #define UART_RX     p19
 
@@ -74,7 +70,6 @@
     #define FET_OUTPUT              p30 
 
 #elif (TARGET == TARGET_SEEEDTINYBLE) 
-
     #define LED_ON      0
     #define LED_OFF     1
 
@@ -91,6 +86,5 @@
 #else
     #error Target not defined correctly.
 #endif
-
 
 #endif /* _APP_CONFIG_H */

@@ -3,8 +3,7 @@
 
 #include "mbed.h"
 
-class BatteryVoltage
-{
+class BatteryVoltage {
 public:
     const static uint16_t resistorLowerKOhm = 100;  //100kOhm 
     const static uint16_t resistorUpperKOhm = 249;  //249kOhm 

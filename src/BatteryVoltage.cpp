@@ -1,8 +1,7 @@
 #include "mbed.h"
 #include "BatteryVoltage.h"
 
-BatteryVoltage::BatteryVoltage(void)
-{
+BatteryVoltage::BatteryVoltage(void) {
     batteryLevel = 0;    
     // Initialize ADC peripheral
     // Enable ADC peripheral
@@ -15,8 +14,7 @@ BatteryVoltage::BatteryVoltage(void)
                       (ADC_CONFIG_EXTREFSEL_None                  << ADC_CONFIG_EXTREFSEL_Pos);
 }
  
-uint8_t BatteryVoltage::batteryLevelGet(void)
-{
+uint8_t BatteryVoltage::batteryLevelGet(void) {
     // Configure channel and start conversion
     NRF_ADC->CONFIG     &= ~ADC_CONFIG_PSEL_Msk;
     NRF_ADC->CONFIG     |= ADC_CONFIG_PSEL_AnalogInput2 << ADC_CONFIG_PSEL_Pos;
@@ -28,8 +26,6 @@ uint8_t BatteryVoltage::batteryLevelGet(void)
     return batteryLevel; // 8 bit
 }
     
-float BatteryVoltage::batteryVoltageGet(uint8_t adcValue)
-{
+float BatteryVoltage::batteryVoltageGet(uint8_t adcValue) {
     return (float)(adcValue * referenceVoltageV * (resistorLowerKOhm + resistorUpperKOhm) / (adcMax * resistorLowerKOhm));
 }
-
