@@ -298,12 +298,14 @@ int main() {
 	systemInitComplete();
 
 	while(true) {
+		if (uart_enabled) {
+			uartCommandReceive();
+		}
 		if (send_time) {
 			send_time = 0;
 			// If Rpi status pin is on
 			if (raspberryPiControl.getRpiState()) {
 				enable_uart();
-				uartCommandReceive();
 
 				// Get the current time from RTC 
 				time_t seconds = rtc.time();
