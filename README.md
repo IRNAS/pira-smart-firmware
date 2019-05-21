@@ -3,7 +3,7 @@ Firmware for PiRa Smart device
 
 www.irnas.eu
 
-# Code Branch
+## Code Branch
 master \
 This branch has all features implemented (RTC, UART, BLE), except low power mode.
 
