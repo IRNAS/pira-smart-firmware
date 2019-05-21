@@ -3,6 +3,10 @@ Firmware for PiRa Smart device
 
 www.irnas.eu
 
+# Code Branch
+develop \
+This branch does NOT have BLE implemented, but has proper low power mode (UART gets disabled and MCU goes to sleep).
+
 ## Using the device
 All the values are updated every second.
 
